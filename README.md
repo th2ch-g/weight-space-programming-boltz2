@@ -28,11 +28,11 @@ experiments and keep generated artifacts outside version control.
 ## Completed follow-up evaluations
 
 The initial campaign described below is historical. Its 104-system test split
-has now been used for the frozen-v2 evaluation. The split membership remains
+has now been used for the frozen-v2 and v11 evaluations. The split membership remains
 55 development, 50 validation, and 104 test systems; test results were not used
 to edit or select the thirty retained candidates.
 
-Two frozen studies completed 2,429 new predictions without execution or
+Three frozen studies completed 3,153 new predictions without execution or
 evaluation failures, using at most four simultaneous GPU nodes:
 
 - [Frozen v2 evaluation](https://huggingface.co/wasarou/weight-space-programming-boltz2/blob/main/evaluation/frozen_v2_evaluation.md): reuse the
@@ -50,6 +50,16 @@ evaluation failures, using at most four simultaneous GPU nodes:
   v11's bond median was worse than the baseline. No candidate met the
   predeclared simultaneous-improvement criteria. This is a development
   comparison and does not establish a validated replacement.
+- [Frozen v11 evaluation](https://huggingface.co/wasarou/weight-space-programming-boltz2/blob/main/evaluation/frozen_v11_evaluation.md):
+  reuse the matched 55 development pairs and run another 724 predictions for
+  validation and test, with the same split and seeds as the v2 follow-up.
+  Validation R/S agreement decreased from 27/50 to 25/50. Across the three
+  test seeds, R/S agreement changed from 125/312 to 129/312, full E/Z from
+  233/312 to 230/312, and joint agreement remained 103/312. Every primary
+  pooled-effect confidence interval included zero. All 362 fresh baseline
+  outputs were byte-identical to the corresponding v2-study baselines.
+  The test split had already been used for v2; this is a follow-up comparison,
+  not a new untouched-test confirmation. The original repair gate remains unmet.
 
 The old v2 development table is reproducible from its saved predictions, but
 its small bond-median improvement did not persist in the fresh comparison.
@@ -62,7 +72,7 @@ it does not isolate the GPU from every other machine-environment difference.
 Each study retains its frozen protocol, source snapshot, checkpoint hashes,
 per-system scores, paired-condition audits, and scheduler audit. The original
 requirement of zero R/S and E/Z errors across all 209 systems remains unmet.
-The article manuscript is unchanged by these evaluations.
+The blog manuscript is maintained separately and excluded from this repository.
 
 ## Initial campaign (historical)
 
