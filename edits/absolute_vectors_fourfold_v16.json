@@ -1,0 +1,9 @@
+{
+  "name": "absolute_vectors_fourfold_v16",
+  "method": "Reasoning-driven direct weight-space programming without training",
+  "hypothesis": "The absolute-vector-only ablation improves pilot R/S and geometry, whereas the relative-vector-only ablation worsens them. The earlier fourfold edit changed both paths and therefore did not isolate a stronger absolute-coordinate signal. Increase only the absolute-coordinate columns fourfold to test this isolated mechanism. Preserve pair-vector and denoiser weights, and report protein displacement because protein reference coordinates are also affected.",
+  "evidence": "artifacts/pilot_v9_11.scores.json",
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atom_features.weight", "columns": [0, 3], "factor": 4.0}
+  ]
+}

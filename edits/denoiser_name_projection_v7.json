@@ -1,0 +1,21 @@
+{
+  "name": "denoiser_name_projection_v7",
+  "method": "Algebraic weight-space programming without training or gradients",
+  "hypothesis": "The denoiser adds a learned noisy-coordinate embedding to atom identity embeddings in the same 128-dimensional stream. Components of ligand-name embeddings parallel to the three noisy-coordinate columns can act as name-dependent coordinate offsets at every denoising step. Remove those components from second-character digit columns, which standard protein heavy atoms do not use. This targets the denoiser's physical-coordinate stream, whereas the earlier v4 edit targeted reference-coordinate channels in the initial encoder. Preserve the input encoder and all coordinate weights.",
+  "evidence": [
+    "artifacts/feature_scope_verification.json",
+    "artifacts/layer_trace_v2.layers.json",
+    "boltz.model.modules.encodersv2.AtomAttentionEncoder.forward"
+  ],
+  "base": "boltz2_base.ckpt",
+  "operations": [
+    {
+      "key": "diffusion_conditioning.atom_encoder.embed_atom_features.weight",
+      "columns": [212, 222],
+      "remove_projection": {
+        "basis_key": "structure_module.score_model.atom_attention_encoder.r_to_q_trans.weight",
+        "basis_columns": [0, 3]
+      }
+    }
+  ]
+}

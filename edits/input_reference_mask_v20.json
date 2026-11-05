@@ -1,0 +1,9 @@
+{
+  "name": "input_reference_mask_v20",
+  "method": "Reasoning-driven direct weight-space programming without training",
+  "hypothesis": "The input atom encoder mixes atoms from multiple reference spaces inside attention windows. Its learned same-reference mask distinguishes atoms of one ligand or one protein residue. Double this existing mask embedding to test whether a stronger indication of shared reference space helps the encoder combine local vectors into a handedness signal. Scaling an embedding does not guarantee a uniform increase in attention, so the effect remains empirical.",
+  "evidence": ["artifacts/pair_weight_inspection.json", "artifacts/prediction_reference_parity.analysis.json"],
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atompair_mask.weight", "factor": 2.0}
+  ]
+}

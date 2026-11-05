@@ -1,0 +1,14 @@
+{
+  "name": "input_geometry_v3",
+  "method": "weight-space programming; direct weight edits without gradients or training",
+  "hypothesis": "The first edit restores all five centers of a mirror-image pilot prediction, but two ligands with many stereocenters remain incorrect despite correct reference conformers. Test a stronger version of the same existing handedness pathway. This is a mechanistic follow-up and may perturb proteins because these weights are shared across atom types.",
+  "observations": {
+    "pilot_v1_chirality": "3/8 base versus 6/8 edited",
+    "remaining_multi_center_errors": "6/8 and 10/17 correct centers, unchanged by the first edit",
+    "diagnostics": "artifacts/pilot_v1.diagnostics.json"
+  },
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atom_features.weight", "columns": [0, 3], "factor": 4.0},
+    {"key": "input_embedder.atom_encoder.embed_atompair_ref_pos.weight", "factor": 4.0}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "reserved_token_channels_v29",
+  "hypothesis": "Isolate the token-stream capacity loss observed in the joint v27 control. Reserve the same eighteen token channels while retaining every atom channel. This is a capacity diagnostic, not a repair.",
+  "reserved_channels_program": {"count": 18, "scope": "token"},
+  "operations": [],
+  "evaluation": "Fresh paired base and both isolated controls on the fixed eight-system development pilot. No test-system predictions."
+}

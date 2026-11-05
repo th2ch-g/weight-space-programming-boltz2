@@ -1,0 +1,10 @@
+{
+  "name": "absolute_vectors_double_bond_v15",
+  "method": "Reasoning-driven direct weight-space programming without training",
+  "hypothesis": "Doubling only absolute reference-coordinate columns improved pilot R/S from four to six of eight systems and reduced both bond and angle error, but did not improve E/Z. Combine that existing handedness intervention with stronger double-versus-single bond contrast. The two paths carry complementary geometry and bond-order information; their interaction is unvalidated and is measured against a fresh paired base prediction.",
+  "evidence": ["artifacts/pilot_v9_11.scores.json", "artifacts/bond_type_inspection.json"],
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atom_features.weight", "columns": [0, 3], "factor": 2.0},
+    {"key": "token_bonds_type.weight", "rows": [3, 4], "contrast_row": 2, "factor": 2.0}
+  ]
+}

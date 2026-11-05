@@ -1,0 +1,38 @@
+{
+  "version": 3,
+  "objective": "Eliminate all R/S and E/Z errors across the complete 209-system ct209 dataset while reducing bond-length and bond-angle error through direct weight-space programming.",
+  "criterion_history": [
+    "The user initially required zero R/S and E/Z errors across all 209 systems.",
+    "The user additionally required improvement in R/S, E/Z, bond length, and bond angle.",
+    "The user explicitly confirmed that the zero R/S and E/Z error requirement remains mandatory."
+  ],
+  "user_required_systems": 209,
+  "primary_acceptance": {
+    "completed_systems": 209,
+    "chirality_correct_systems": 209,
+    "ez_correct_systems": 209,
+    "median_bond_length_rms_error": "strictly lower than the paired base checkpoint",
+    "median_bond_angle_rms_error": "strictly lower than the paired base checkpoint",
+    "excluded_or_failed_systems": 0,
+    "unverifiable_stereochemistry_items": 0
+  },
+  "secondary_acceptance": {
+    "median_bond_error_ratio_maximum": 1.0,
+    "median_angle_error_ratio_maximum": 1.0,
+    "median_paired_protein_ca_rmsd_maximum_angstrom": 0.5,
+    "report_every_protein_outlier": true
+  },
+  "inference_protocol": "protocol.json",
+  "evaluation_extension": "Use modern CIP R/S agreement and full_ez_all including readable defined ring E/Z bonds. Preserve the original RGI-scoped ez_all metric separately. Report heavy-atom-undecidable bonds explicitly and require one common graph mapping for full_stereo_all.",
+  "development_policy": "Continue mechanistic diagnosis on the development split. Previous validation results are now known; preserve their history and do not call repeated validation independent. Keep the 104-system test split unused until a candidate meets zero R/S and E/Z errors and improves bond-length and bond-angle error in development and validation.",
+  "test_policy": "Freeze checkpoint and criteria before the first test evaluation. If test results inform any later edit, explicitly mark the test split as used for development; a future 209/209 result then demonstrates dataset performance, not independent generalization.",
+  "restrictions": {
+    "training_or_gradient_optimization": false,
+    "inference_guidance_or_coordinate_repair": false,
+    "test_target_specific_weights_or_output_lookup": false,
+    "original_external_weights_modified": false,
+    "edited_checkpoint_location": "project root",
+    "maximum_concurrent_gpu_nodes": 4
+  },
+  "completion_policy": "The goal remains incomplete unless all acceptance criteria are directly verified on all 209 systems without exclusions. Report paired confidence intervals, per-system regressions, and all failures. Single-seed success does not establish seed robustness or performance beyond ct209."
+}

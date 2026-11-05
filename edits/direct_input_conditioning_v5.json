@@ -1,0 +1,14 @@
+{
+  "name": "direct_input_conditioning_v5",
+  "method": "Reasoning-driven weight-space programming without training or gradients",
+  "hypothesis": "The denoiser normalizes trunk and direct input features together. In the eight development traces, the variable ligand input contribution has norm 6.2 to 8.2, versus trunk contributions near 100. The direct input carries reference geometry before trunk mixing. Multiply only the learned normalization gain of its 384 channels by four, preserving the normalization offsets and every trunk weight. This strengthens the existing direct geometry path without changing trunk predictions. Protein diffusion can still change and must be measured.",
+  "evidence": "artifacts/conditioning_inspection.json",
+  "base": "boltz2_base.ckpt",
+  "operations": [
+    {
+      "key": "structure_module.score_model.single_conditioner.norm_single.weight",
+      "entries": [384, 768],
+      "factor": 4.0
+    }
+  ]
+}

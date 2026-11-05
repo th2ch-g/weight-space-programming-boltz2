@@ -1,0 +1,9 @@
+{
+  "name": "input_digit_suppression_v18",
+  "method": "Reasoning-driven direct weight-space programming without training",
+  "hypothesis": "Reflecting the reference ligand reverses all 30 defined centers in three diagnostic systems but changes none of their predicted R/S assignments, for either base or v15. Generic ligand atom-name digits may therefore supply a competing learned prior. Suppress the entire second-character digit embedding in the input encoder, rather than only its coordinate-parallel component as in v4. Standard protein heavy atoms do not use these columns. This is an ablation of the atom-name hypothesis, not an established correction.",
+  "evidence": ["artifacts/prediction_reference_parity.analysis.json", "artifacts/feature_scope_verification.json"],
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atom_features.weight", "columns": [212, 222], "factor": 0.0}
+  ]
+}

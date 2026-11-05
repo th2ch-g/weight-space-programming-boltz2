@@ -1,0 +1,16 @@
+{
+  "name": "protected_distance_direction_v13",
+  "method": "Algebraic weight-space programming without training or gradients",
+  "hypothesis": "The denoiser adds projected trunk-pair features and reference-distance features before normalizing attention biases. The trunk projection has 6.18 percent of its squared weight norm along the reference-distance direction. Remove that rank-one component so the trunk cannot directly overwrite the distance channel before the pair MLP. This does not prove that the overlap is harmful; the intervention tests that causal hypothesis while retaining all other trunk directions and reference weights.",
+  "evidence": "artifacts/pair_weight_inspection.json",
+  "operations": [
+    {
+      "key": "diffusion_conditioning.atom_encoder.z_to_p_trans.1.weight",
+      "columns": [0, 128],
+      "remove_projection": {
+        "basis_key": "diffusion_conditioning.atom_encoder.embed_atompair_ref_dist.weight",
+        "basis_columns": [0, 1]
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "double_bond_contrast_v14",
+  "method": "Algebraic weight-space programming without training",
+  "hypothesis": "The trunk receives an explicit bond-type embedding, whereas the earlier interventions changed reference coordinates or distances. Extrapolate the existing double-versus-single bond contrast by a factor of two to strengthen local unsaturation information. The tokenizer reserves index zero for no bond and adds one to chemical bond IDs, so single and double bonds use rows two and three. Preserve all other bond embeddings. This cannot directly encode E/Z or R/S and tests whether stronger bond-order information helps the existing geometry pathway retain them.",
+  "evidence": "artifacts/bond_type_inspection.json",
+  "operations": [
+    {"key": "token_bonds_type.weight", "rows": [3, 4], "contrast_row": 2, "factor": 2.0}
+  ]
+}

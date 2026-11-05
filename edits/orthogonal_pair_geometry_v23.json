@@ -1,0 +1,24 @@
+{
+  "name": "orthogonal_pair_geometry_v23",
+  "method": "Algebraic weight-space programming without training or gradients",
+  "hypothesis": "The input pair embedding adds orientation-sensitive relative vectors and invariant distance and reference-space-mask features. Remove the projection of the two invariant embeddings onto the relative-vector column space. This isolates their initial affine contributions without changing relative-vector weights or learned nonlinear pair processing. It is a targeted test of vector-scalar interference, not a guarantee of rotational equivariance.",
+  "evidence": ["artifacts/pair_weight_inspection.json", "artifacts/prediction_reference_parity.analysis.json"],
+  "operations": [
+    {
+      "key": "input_embedder.atom_encoder.embed_atompair_ref_dist.weight",
+      "columns": [0, 1],
+      "remove_projection": {
+        "basis_key": "input_embedder.atom_encoder.embed_atompair_ref_pos.weight",
+        "basis_columns": [0, 3]
+      }
+    },
+    {
+      "key": "input_embedder.atom_encoder.embed_atompair_mask.weight",
+      "columns": [0, 1],
+      "remove_projection": {
+        "basis_key": "input_embedder.atom_encoder.embed_atompair_ref_pos.weight",
+        "basis_columns": [0, 3]
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "direct_input_balance_v6",
+  "method": "Reasoning-driven weight-space programming without training or gradients",
+  "hypothesis": "The measured ligand trunk contribution is roughly sixteen times the variable direct input contribution. Test approximate amplitude balance by multiplying the direct-input normalization gains by sixteen. Unlike amplifying the affine input projection, this preserves the learned offset. This is a diagnostic intervention on the proposed information bottleneck; it may damage protein or ligand geometry and is not a validated repair.",
+  "evidence": "artifacts/conditioning_inspection.json",
+  "base": "boltz2_base.ckpt",
+  "operations": [
+    {
+      "key": "structure_module.score_model.single_conditioner.norm_single.weight",
+      "entries": [384, 768],
+      "factor": 16.0
+    }
+  ]
+}

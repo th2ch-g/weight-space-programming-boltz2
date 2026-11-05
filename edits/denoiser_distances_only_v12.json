@@ -1,0 +1,9 @@
+{
+  "name": "denoiser_distances_only_v12",
+  "method": "Reasoning-driven direct weight-space programming without training",
+  "hypothesis": "The combined v2 intervention improves median bond and angle error but leaves full E/Z unchanged. Isolate its rotation-invariant denoiser distance pathway by doubling only the existing reciprocal-distance embedding. Unlike the input-vector interventions, this leaves the trunk and its protein representation unchanged. Distance features cannot directly encode handedness, so any R/S benefit must arise indirectly through preservation of local geometry during denoising.",
+  "evidence": ["artifacts/development_v23_full_summary.json", "artifacts/pair_weight_inspection.json"],
+  "operations": [
+    {"key": "diffusion_conditioning.atom_encoder.embed_atompair_ref_dist.weight", "factor": 2.0}
+  ]
+}

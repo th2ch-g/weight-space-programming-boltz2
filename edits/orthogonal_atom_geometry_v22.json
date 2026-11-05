@@ -1,0 +1,16 @@
+{
+  "name": "orthogonal_atom_geometry_v22",
+  "method": "Algebraic weight-space programming without training or gradients",
+  "hypothesis": "Reference coordinates and chemical features are summed in the same affine atom embedding. Every chemical component parallel to the three coordinate columns acts as a feature-dependent coordinate offset. The earlier v4 edit removed only second-character digit offsets. Remove the coordinate-parallel part from all non-coordinate columns while preserving the coordinate map exactly. This creates a clean linear reference-coordinate subspace before nonlinear encoding; it does not establish that downstream layers will use handedness correctly. Chemical features retain their orthogonal components, and protein effects must be measured.",
+  "evidence": ["artifacts/prediction_reference_parity.analysis.json", "artifacts/feature_scope_verification.json"],
+  "operations": [
+    {
+      "key": "input_embedder.atom_encoder.embed_atom_features.weight",
+      "columns": [3, 388],
+      "remove_projection": {
+        "basis_key": "input_embedder.atom_encoder.embed_atom_features.weight",
+        "basis_columns": [0, 3]
+      }
+    }
+  ]
+}

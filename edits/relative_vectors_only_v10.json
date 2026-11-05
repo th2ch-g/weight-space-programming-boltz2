@@ -1,0 +1,9 @@
+{
+  "name": "relative_vectors_only_v10",
+  "method": "Reasoning-driven direct weight-space programming without training",
+  "hypothesis": "Earlier vector edits changed two distinct pathways at once. Absolute reference coordinates include independent residue translations, whereas within-reference-space atom-pair differences cancel those translations. Double only the relative vector embedding to test whether it carries the useful stereochemical effect with less perturbation of protein tokens. Keep absolute coordinate embeddings and all denoiser weights unchanged.",
+  "evidence": ["edits/input_geometry_v1.json", "artifacts/development_v23_full.scores.json"],
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atompair_ref_pos.weight", "factor": 2.0}
+  ]
+}

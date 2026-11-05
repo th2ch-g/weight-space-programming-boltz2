@@ -1,0 +1,11 @@
+{
+  "name": "reference_mask_combined_v21",
+  "method": "Reasoning-driven direct weight-space programming without training",
+  "hypothesis": "The v15 combination improves all four aggregate pilot metrics but retains R/S errors in three systems and an E/Z error in one. Add the same-reference mask intervention to test whether local reference-space information helps preserve the stronger coordinate and bond-order signals. Keep this distinct from the mask-only ablation so any interaction can be identified.",
+  "evidence": ["artifacts/pilot_v14_17.scores.json", "edits/input_reference_mask_v20.json"],
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atom_features.weight", "columns": [0, 3], "factor": 2.0},
+    {"key": "token_bonds_type.weight", "rows": [3, 4], "contrast_row": 2, "factor": 2.0},
+    {"key": "input_embedder.atom_encoder.embed_atompair_mask.weight", "factor": 2.0}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "reserved_atom_channels_v28",
+  "hypothesis": "Isolate the atom-stream capacity loss observed in the joint v27 control. Reserve the same eighteen atom channels while retaining every denoiser token channel. This is a capacity diagnostic, not a repair.",
+  "reserved_channels_program": {"count": 18, "scope": "atom"},
+  "operations": [],
+  "evaluation": "Fresh paired base and both isolated controls on the fixed eight-system development pilot. No test-system predictions."
+}

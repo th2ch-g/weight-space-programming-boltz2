@@ -1,0 +1,32 @@
+{
+  "name": "orthogonal_input_geometry_v24",
+  "method": "Algebraic weight-space programming without training or gradients",
+  "hypothesis": "Combine the atom and pair affine-subspace interventions to test whether both sources of coordinate interference must be removed together. Preserve every coordinate-vector column and every nonlinear encoder weight. Compare separately with each component intervention and a fresh base prediction; this candidate remains unvalidated until stereo, geometry, and protein outcomes are measured.",
+  "evidence": ["edits/orthogonal_atom_geometry_v22.json", "edits/orthogonal_pair_geometry_v23.json"],
+  "operations": [
+    {
+      "key": "input_embedder.atom_encoder.embed_atom_features.weight",
+      "columns": [3, 388],
+      "remove_projection": {
+        "basis_key": "input_embedder.atom_encoder.embed_atom_features.weight",
+        "basis_columns": [0, 3]
+      }
+    },
+    {
+      "key": "input_embedder.atom_encoder.embed_atompair_ref_dist.weight",
+      "columns": [0, 1],
+      "remove_projection": {
+        "basis_key": "input_embedder.atom_encoder.embed_atompair_ref_pos.weight",
+        "basis_columns": [0, 3]
+      }
+    },
+    {
+      "key": "input_embedder.atom_encoder.embed_atompair_mask.weight",
+      "columns": [0, 1],
+      "remove_projection": {
+        "basis_key": "input_embedder.atom_encoder.embed_atompair_ref_pos.weight",
+        "basis_columns": [0, 3]
+      }
+    }
+  ]
+}

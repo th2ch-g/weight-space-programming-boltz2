@@ -1,0 +1,10 @@
+{
+  "name": "both_digit_suppression_v19",
+  "method": "Reasoning-driven direct weight-space programming without training",
+  "hypothesis": "The same generic ligand-name digits enter both the input encoder and the denoiser atom conditioner. Remove their second-character embeddings in both pathways to test whether the denoiser can reintroduce a name-dependent prior after input-only suppression. Preserve element, charge, reference coordinates, and other name characters. Protein heavy-atom names are outside this direct edit scope.",
+  "evidence": ["artifacts/prediction_reference_parity.analysis.json", "artifacts/feature_scope_verification.json"],
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atom_features.weight", "columns": [212, 222], "factor": 0.0},
+    {"key": "diffusion_conditioning.atom_encoder.embed_atom_features.weight", "columns": [212, 222], "factor": 0.0}
+  ]
+}

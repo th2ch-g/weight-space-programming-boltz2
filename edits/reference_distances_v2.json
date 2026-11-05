@@ -1,0 +1,16 @@
+{
+  "name": "reference_distances_v2",
+  "method": "weight-space programming; direct weight edits without gradients or training",
+  "hypothesis": "The first edit improves handedness but leaves the two pilot E/Z failures. Both reference conformers have correct E/Z, and one prediction loses E/Z late in denoising. Increase the denoiser's existing reciprocal reference-distance signal, which can distinguish local cis/trans geometry without imposing the reference frame. Preserve the input edit that improved pilot chirality.",
+  "observations": {
+    "pilot_v1_joint_stereo": "3/8 base versus 5/8 edited",
+    "pilot_v1_ez": "6/8 in both conditions",
+    "denoiser_reference_distance_weight_norm": 3.607,
+    "diagnostics": "artifacts/pilot_v1.diagnostics.json"
+  },
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atom_features.weight", "columns": [0, 3], "factor": 2.0},
+    {"key": "input_embedder.atom_encoder.embed_atompair_ref_pos.weight", "factor": 2.0},
+    {"key": "diffusion_conditioning.atom_encoder.embed_atompair_ref_dist.weight", "factor": 2.0}
+  ]
+}

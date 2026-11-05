@@ -1,0 +1,9 @@
+{
+  "name": "absolute_vectors_only_v11",
+  "method": "Reasoning-driven direct weight-space programming without training",
+  "hypothesis": "Isolate the other half of the original two-pathway edit: double the input atom-coordinate columns while leaving pair vectors and denoiser weights unchanged. Compare this with the relative-vector-only intervention to identify which pathway causes stereochemical gains and protein or bond distortions. This is a mechanistic ablation rather than an established repair.",
+  "evidence": ["edits/input_geometry_v1.json", "artifacts/development_v23_full.scores.json"],
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atom_features.weight", "columns": [0, 3], "factor": 2.0}
+  ]
+}

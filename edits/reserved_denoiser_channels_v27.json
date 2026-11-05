@@ -1,0 +1,9 @@
+{
+  "name": "reserved_denoiser_channels_v27",
+  "hypothesis": "A weight-derived set of eighteen atom channels and eighteen denoiser token channels can be reserved for a future analytic parity program with limited damage to the pretrained prediction. This checkpoint is the zero-signal capacity control, not a repair hypothesis.",
+  "selection": "Rank only original checkpoint readout norms. Use no structures, labels, predictions, or fitted coefficients to select channels.",
+  "reserved_channels_program": {"count": 18},
+  "operations": [],
+  "evaluation": "Fresh paired base and control predictions on the fixed eight-system development pilot. Report all four chemistry metrics and protein CA displacements. The test split remains unused.",
+  "limitation": "LayerNorm statistics still couple the reserved and retained channels. Zeroing readers does not guarantee preservation of pretrained behavior."
+}

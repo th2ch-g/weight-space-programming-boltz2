@@ -1,0 +1,21 @@
+{
+  "name": "ligand_name_projection_v4",
+  "method": "weight-space programming; direct algebraic weight edits without gradients or training",
+  "hypothesis": "The first edit changes shared protein inputs and yields only a small development gain. Canonical SMILES atom names contain a digit in the second character, whereas standard protein heavy-atom names do not. In the input affine map, name-embedding components parallel to the three reference-coordinate columns act as atom-name-dependent coordinate offsets. Remove those components only from second-character digit columns. Preserve all reference-coordinate weights and all other feature columns. This tests whether arbitrary ligand names interfere with the geometric signal while avoiding a direct change to protein atom inputs.",
+  "observations": {
+    "development_v1_joint_stereo_partial": "20/54 base versus 22/54 edited; one complex awaiting input-format recovery",
+    "development_v1_protein_change": "Largest paired protein CA RMSD is 6.437 A",
+    "feature_layout": "3 reference coordinates + 1 charge + 128 elements + four 64-way atom-name characters",
+    "target_columns": "132 + 64 + ASCII digit codes minus 32 = columns 212 through 221"
+  },
+  "operations": [
+    {
+      "key": "input_embedder.atom_encoder.embed_atom_features.weight",
+      "columns": [212, 222],
+      "remove_projection": {
+        "basis_key": "input_embedder.atom_encoder.embed_atom_features.weight",
+        "basis_columns": [0, 3]
+      }
+    }
+  ]
+}

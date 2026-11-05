@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "objective": "Repair Boltz-2 ligand stereochemistry and geometry by direct, reasoning-driven edits to pretrained weights.",
+  "source": "https://rikiyat.github.io/blog/weight-space-programming/",
+  "dataset": "bench-rgi ct209",
+  "development_systems": 55,
+  "validation_systems": 50,
+  "test_systems": 104,
+  "split_manifest": "data/ct209/manifest.json",
+  "weight_scope": "Regular checkpoint files in the project root; original external checkpoints are read-only.",
+  "forbidden_updates": ["gradient descent", "optimizer or training loops", "coordinate correction during inference", "postprocessing to repair predicted coordinates", "test-set-driven weight selection"],
+  "inference": {
+    "boltz": "2.2.1",
+    "seed": 1,
+    "recycling_steps": 3,
+    "sampling_steps": 200,
+    "diffusion_samples": 1,
+    "max_msa_seqs": 8192,
+    "msa_subsampling": false,
+    "native_physical_guidance": false,
+    "native_contact_guidance": false,
+    "fk_steering": false,
+    "rgi": false,
+    "coordinate_postprocessing": false
+  },
+  "primary_metrics": ["modern CIP chirality agreement under graph isomorphism", "bench-rgi E/Z agreement", "joint stereochemistry agreement"],
+  "secondary_metrics": ["legacy bench-rgi chirality agreement", "bond and angle RMS error against independent ETKDGv3/UFF conformer", "protein-ligand and intraligand clashes", "protein CA RMSD and ligand displacement after paired protein alignment"],
+  "selection": "Inspect weights and development predictions, document a mechanistic hypothesis before every edit, and use validation only after development improvement. Freeze a selected candidate before test evaluation. A failed candidate is not a repaired model.",
+  "resource_limits": {"max_concurrent_gpu_nodes": 4, "gpus_per_task": 1, "nodes_per_task": 1},
+  "failure_policy": "Retain failures and report denominators. Retry only identifiable execution errors with their original record preserved; do not silently exclude chemical failures.",
+  "limitations": ["Single prediction seed in the initial benchmark", "Sequence threshold does not exclude all remote homology", "Paired displacement is not experimental pose accuracy", "Successful local edits may not generalize outside ct209"]
+}

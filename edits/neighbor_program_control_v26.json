@@ -1,0 +1,8 @@
+{
+  "name": "neighbor_program_control_v26",
+  "method": "Analytic weight-space programming without training or gradients",
+  "hypothesis": "Reserve the same pair channels and pair-MLP units as v25 but set the added local attention prior to zero. This control separates the effect of reserving learned capacity from the effect of the new neighbor prior. Changes in layer normalization and removal of learned paths remain present.",
+  "evidence": ["artifacts/programmed_locality.json"],
+  "neighbor_bias_program": {"strength": 0.0},
+  "operations": []
+}

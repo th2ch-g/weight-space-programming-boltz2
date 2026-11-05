@@ -1,0 +1,13 @@
+{
+  "name": "programmed_neighbor_prior_v25",
+  "method": "Analytic weight-space programming in existing affine and ReLU layers, without training or gradients",
+  "hypothesis": "The first input-encoder attention gives little mass to directly bonded neighbors at two persistent chirality errors. Program a local reference-distance prior to improve their representation. Reserve two pair channels and four existing pair-MLP units for a triangular function of reciprocal squared distance. The prior vanishes at self distance and beyond 2.38 angstrom, peaks at 1.36 angstrom, and adds a fixed normalized logit strength of two to the first four attention heads. All ordinary forward computations remain upstream Boltz code. This may include close nonbonded atoms and does not guarantee parity transfer or successful repair.",
+  "evidence": [
+    "artifacts/neighbor_attention.json",
+    "artifacts/neighbor_attention_programmed.json",
+    "artifacts/programmed_locality.json"
+  ],
+  "control": "neighbor_program_control_v26 reserves exactly the same channels with zero added prior",
+  "neighbor_bias_program": {"strength": 2.0},
+  "operations": []
+}

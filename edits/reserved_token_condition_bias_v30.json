@@ -1,0 +1,8 @@
+{
+  "name": "reserved_token_condition_bias_v30",
+  "hypothesis": "The v29 control deleted learned conditional bias contributions by zeroing columns after AdaLN. Isolate that damage by preserving all conditional bias readers while suppressing the reserved residual components through existing sigmoid scale gates. Keep the same eighteen channels, source erasures, and residual write erasures as v29.",
+  "reserved_channels_program": {"count": 18, "scope": "token", "preserve_condition_bias": true},
+  "operations": [],
+  "evaluation": "Fresh paired baseline, v29, and v30 predictions on the fixed eight-system development pilot. This is a capacity control, not a chemistry repair. No test-system predictions.",
+  "limitation": "LayerNorm mean and variance coupling remains. The suppressed AdaLN scale also blocks future signal readers, so a passing control alone would not establish a complete signal-routing program."
+}

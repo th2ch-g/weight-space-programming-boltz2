@@ -1,0 +1,28 @@
+{
+  "name": "input_center_preserving_v8",
+  "method": "Algebraic weight-space programming without training or gradients",
+  "hypothesis": "Direct-input gain improves pilot stereochemistry but also amplifies a common centering term produced by normalizing inputs jointly with the much larger trunk activations. That term has norm 3 to 5, comparable to the actual input signal. Increase the input projection fourfold only in the subspace orthogonal to the learned input normalization gain and offset vectors. The added operator then annihilates both the trunk-dependent centering term and the learned offset. This retains the original affine prior while amplifying variation in the direct input features; all trunk weights remain unchanged.",
+  "algebra": "W_new = W + 3 W (I - Q Q^T), where Q spans the input halves of LayerNorm gamma and beta. Thus delta_W gamma = delta_W beta = 0.",
+  "evidence": [
+    "artifacts/conditioning_inspection.json",
+    "artifacts/pilot_v56.scores.json"
+  ],
+  "base": "boltz2_base.ckpt",
+  "operations": [
+    {
+      "key": "structure_module.score_model.single_conditioner.single_embed.weight",
+      "columns": [384, 768],
+      "factor": 4.0,
+      "gain_orthogonal_to": [
+        {
+          "key": "structure_module.score_model.single_conditioner.norm_single.weight",
+          "entries": [384, 768]
+        },
+        {
+          "key": "structure_module.score_model.single_conditioner.norm_single.bias",
+          "entries": [384, 768]
+        }
+      ]
+    }
+  ]
+}

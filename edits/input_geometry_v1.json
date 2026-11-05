@@ -1,0 +1,15 @@
+{
+  "name": "input_geometry_v1",
+  "method": "weight-space programming; direct weight edits without gradients or training",
+  "hypothesis": "The input atom encoder is the main route for reference handedness. The denoiser's reference-coordinate weights are nearly zero and its distance features cannot distinguish mirror images. Increase existing vector-sensitive input pathways to make reference geometry more influential before the trunk, without injecting a mismatched reference frame into the denoiser.",
+  "observations": {
+    "input_coordinate_column_norms": [0.63396096, 1.02082813, 0.90967947],
+    "denoiser_coordinate_column_norms": [0.00043612, 0.00046402, 0.00057589],
+    "input_pair_vector_norm": 2.164463996887207,
+    "denoiser_pair_vector_norm": 0.050118573009967804
+  },
+  "operations": [
+    {"key": "input_embedder.atom_encoder.embed_atom_features.weight", "columns": [0, 3], "factor": 2.0},
+    {"key": "input_embedder.atom_encoder.embed_atompair_ref_pos.weight", "factor": 2.0}
+  ]
+}
