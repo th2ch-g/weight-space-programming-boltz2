@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import torch
+from checkpoint_io import load_checkpoint
 
 
 def row_pair_distances(matrices):
@@ -24,7 +25,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     torch.set_grad_enabled(False)
-    state = torch.load("boltz2_base.ckpt", map_location="cpu", weights_only=False, mmap=True)["state_dict"]
+    state = load_checkpoint("boltz2_base.ckpt", map_location="cpu", mmap=True)["state_dict"]
     score = "structure_module.score_model."
     atom = "diffusion_conditioning.atom_encoder."
     groups = {

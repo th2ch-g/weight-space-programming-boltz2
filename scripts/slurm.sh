@@ -11,5 +11,5 @@ export NUMBA_CACHE_DIR="$PWD/.cache/numba"
 export TORCH_HOME="$PWD/.cache/torch"
 export TORCHINDUCTOR_CACHE_DIR="$PWD/.cache/torchinductor"
 export TRITON_CACHE_DIR="$PWD/.cache/triton"
-exec uv run --no-project --python "${WSP_PYTHON:-.venv/bin/python}" "$@"
+exec uv run --no-project --python "${WSP_PYTHON:-.venv-security/bin/python}" "$@"
 

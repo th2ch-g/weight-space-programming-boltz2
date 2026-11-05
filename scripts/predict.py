@@ -12,6 +12,7 @@ from unittest.mock import patch
 import numpy as np
 import torch
 import yaml
+from checkpoint_io import load_model_checkpoint
 
 
 def digest(path):
@@ -100,6 +101,7 @@ def main():
         "local_molecule_sha256": digest(local_molecule) if local_molecule.exists() else None,
         "input_name_overflow_fallback": local_molecule.exists(),
         "runner_sha256": digest(Path(__file__)),
+        "checkpoint_loader_sha256": digest(Path(__file__).with_name("checkpoint_io.py")),
         "settings": {
             "recycling_steps": 3,
             "sampling_steps": 200,
@@ -138,7 +140,7 @@ def main():
         def load_from_checkpoint(*pos, **kwargs):
             for key in ("fk_steering", "physical_guidance_update", "contact_guidance_update"):
                 kwargs["steering_args"][key] = False
-            model = Boltz2.load_from_checkpoint(*pos, **kwargs)
+            model = load_model_checkpoint(Boltz2, *pos, **kwargs)
             if args.reference_reflection:
 
                 def reflect_reference(module, inputs, named):

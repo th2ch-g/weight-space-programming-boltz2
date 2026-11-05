@@ -117,12 +117,17 @@ def integrity(plan, protocol, reused_runs):
             check["reused_run_unchanged"] = digest(run_path) == reused_runs[task["output"]]
         else:
             check["frozen_runner"] = run["runner_sha256"] == protocol["source_sha256"]["scripts/predict.py"]
+            if "scripts/checkpoint_io.py" in protocol["source_sha256"]:
+                check["frozen_checkpoint_loader"] = (
+                    run.get("checkpoint_loader_sha256")
+                    == protocol["source_sha256"]["scripts/checkpoint_io.py"]
+                )
         checks.append(check)
         by_id.setdefault(task["id"], []).append(run)
     for sid, pair in by_id.items():
         if len(pair) != 2:
             continue
-        for key in ("settings", "versions", "runner_sha256", "source_sha256", "gpu", "job_id", "input_sha256", "msa_sha256"):
+        for key in ("settings", "versions", "runner_sha256", "checkpoint_loader_sha256", "source_sha256", "gpu", "job_id", "input_sha256", "msa_sha256"):
             checks.append({"id": sid, "paired_field": key, "equal": pair[0].get(key) == pair[1].get(key)})
     ok = all(value is True for check in checks for key, value in check.items()
              if key not in {"id", "checkpoint", "paired_field"})

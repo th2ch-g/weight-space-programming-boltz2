@@ -6,9 +6,9 @@ import shutil
 from importlib.metadata import version
 from pathlib import Path
 
-import torch
 import yaml
 from Bio.Align import PairwiseAligner
+from checkpoint_io import load_checkpoint
 from rdkit import Chem
 from rdkit.Chem.Scaffolds import MurckoScaffold
 
@@ -142,7 +142,7 @@ def main():
         flush=True,
     )
     before = digest(args.checkpoint)
-    ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False, mmap=True)
+    ckpt = load_checkpoint(args.checkpoint, map_location="cpu", mmap=True)
     state = ckpt["state_dict"]
     stats = {}
     for key, value in state.items():

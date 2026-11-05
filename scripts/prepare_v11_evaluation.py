@@ -107,7 +107,7 @@ def main():
     assert len(tasks) == 724
     assert len({t["output"] for t in tasks}) == len(tasks)
     source_names = [
-        "scripts/predict.py", "scripts/worker.py", "scripts/evaluate.py", "scripts/chemistry.py",
+        "scripts/predict.py", "scripts/checkpoint_io.py", "scripts/worker.py", "scripts/evaluate.py", "scripts/chemistry.py",
         "scripts/audit_pairs.py", "scripts/summarize.py", "scripts/slurm.sh",
         "scripts/prepare_v11_evaluation.py", "scripts/report_v11_evaluation.py",
         "scripts/report_frozen_evaluation.py", "tests/test_v11_evaluation.py",

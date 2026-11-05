@@ -74,7 +74,7 @@ def prepare(root):
             })
     assert len(tasks) == 1705 and len({t["output"] for t in tasks}) == 1705
     source_names = [
-        "scripts/predict.py", "scripts/worker.py", "scripts/evaluate.py", "scripts/chemistry.py",
+        "scripts/predict.py", "scripts/checkpoint_io.py", "scripts/worker.py", "scripts/evaluate.py", "scripts/chemistry.py",
         "scripts/audit_pairs.py", "scripts/summarize.py", "scripts/slurm.sh",
         "scripts/compare_all_candidates.py", "tests/test_candidate_comparison.py",
         "pyproject.toml", "uv.lock", "data/ct209/manifest.json",
@@ -130,6 +130,9 @@ def report(root):
             raise ValueError("Prediction used a different checkpoint")
         if run["runner_sha256"] != protocol["source_sha256"]["scripts/predict.py"]:
             raise ValueError("Prediction used a different runner")
+        if "scripts/checkpoint_io.py" in protocol["source_sha256"]:
+            if run.get("checkpoint_loader_sha256") != protocol["source_sha256"]["scripts/checkpoint_io.py"]:
+                raise ValueError("Prediction used a different checkpoint loader")
         if run["seed"] != 1 or run.get("diagnostic") or run.get("reference_reflection"):
             raise ValueError("Unexpected inference intervention or seed")
         if any(run["settings"][key] for key in (

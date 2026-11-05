@@ -9,6 +9,7 @@ import torch
 from boltz.data.module.inferencev2 import Boltz2InferenceDataModule
 from boltz.data.types import Manifest
 from boltz.model.modules.trunkv2 import InputEmbedder
+from checkpoint_io import load_checkpoint
 
 
 def rotations():
@@ -23,7 +24,7 @@ def rotations():
 
 
 def load_encoder():
-    checkpoint = torch.load("boltz2_base.ckpt", map_location="cpu", weights_only=False, mmap=True)
+    checkpoint = load_checkpoint("boltz2_base.ckpt", map_location="cpu", mmap=True)
     parameters = checkpoint["hyper_parameters"]
     keys = (
         "atom_s",

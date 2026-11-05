@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import torch
+from checkpoint_io import load_checkpoint
 
 
 def align(source, target):
@@ -30,7 +31,7 @@ def main():
     parser.add_argument("--output", type=Path, default=Path("artifacts/coordinate_transfer_inspection.json"))
     args = parser.parse_args()
     torch.set_grad_enabled(False)
-    checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False, mmap=True)
+    checkpoint = load_checkpoint(args.checkpoint, map_location="cpu", mmap=True)
     state = checkpoint["state_dict"]
     source = state["input_embedder.atom_encoder.embed_atom_features.weight"].double()
     target = state["diffusion_conditioning.atom_encoder.embed_atom_features.weight"].double()

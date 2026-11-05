@@ -87,6 +87,7 @@ def main():
                 "settings",
                 "versions",
                 "runner_sha256",
+                "checkpoint_loader_sha256",
                 "source_sha256",
                 "gpu",
                 "job_id",

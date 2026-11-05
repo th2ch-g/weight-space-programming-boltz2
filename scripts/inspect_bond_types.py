@@ -6,6 +6,7 @@ import torch
 from boltz.data import const
 from boltz.data.tokenize.boltz2 import tokenize_structure
 from boltz.data.types import StructureV2
+from checkpoint_io import load_checkpoint
 
 
 def main():
@@ -13,7 +14,7 @@ def main():
     parser.add_argument("plan", type=Path)
     args = parser.parse_args()
     torch.set_grad_enabled(False)
-    state = torch.load("boltz2_base.ckpt", map_location="cpu", weights_only=False, mmap=True)[
+    state = load_checkpoint("boltz2_base.ckpt", map_location="cpu", mmap=True)[
         "state_dict"
     ]
     embedding = state["token_bonds_type.weight"].double()

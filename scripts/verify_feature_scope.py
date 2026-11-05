@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import torch
+from checkpoint_io import load_checkpoint
 from rdkit import Chem
 
 sys.path.insert(0, str(Path("../impl_rgi/bench-rgi")))
@@ -36,7 +37,7 @@ for row in manifest["records"]:
         reference = Chem.MolFromSmiles(row["smiles"])
         assert is_ez_equal(reference, mol)
         overflow.append({"id": row["id"], "reference_ez_valid": True})
-base = torch.load("boltz2_base.ckpt", map_location="cpu", weights_only=False, mmap=True)[
+base = load_checkpoint("boltz2_base.ckpt", map_location="cpu", mmap=True)[
     "state_dict"
 ]
 key = "input_embedder.atom_encoder.embed_atom_features.weight"

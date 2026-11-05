@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import torch
+from checkpoint_io import load_checkpoint
 
 
 def digest(path):
@@ -25,7 +26,7 @@ def main():
         raise FileExistsError(args.output)
     spec = json.loads(args.spec.read_text())
     before_hash = digest(args.base)
-    checkpoint = torch.load(args.base, map_location="cpu", weights_only=False, mmap=True)
+    checkpoint = load_checkpoint(args.base, map_location="cpu", mmap=True)
     state = checkpoint["state_dict"]
     changed = {}
     total = sum(value.numel() for value in state.values())
@@ -154,8 +155,8 @@ def main():
     temporary = args.output.with_suffix(".tmp")
     torch.save(checkpoint, temporary)
     temporary.replace(args.output)
-    saved = torch.load(args.output, map_location="cpu", weights_only=False, mmap=True)
-    original = torch.load(args.base, map_location="cpu", weights_only=False, mmap=True)
+    saved = load_checkpoint(args.output, map_location="cpu", mmap=True)
+    original = load_checkpoint(args.base, map_location="cpu", mmap=True)
     assert saved.keys() == original.keys()
     assert saved["state_dict"].keys() == original["state_dict"].keys()
     for key in state:

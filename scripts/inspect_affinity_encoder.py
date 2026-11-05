@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import torch
+from checkpoint_io import load_checkpoint
 
 
 def main():
@@ -11,8 +12,8 @@ def main():
     parser.add_argument("--affinity-checkpoint", type=Path, default=Path(".cache/boltz/boltz2_aff.ckpt"))
     args = parser.parse_args()
     torch.set_grad_enabled(False)
-    base = torch.load("boltz2_base.ckpt", map_location="cpu", weights_only=False, mmap=True)
-    affinity = torch.load(args.affinity_checkpoint, map_location="cpu", weights_only=False, mmap=True)
+    base = load_checkpoint("boltz2_base.ckpt", map_location="cpu", mmap=True)
+    affinity = load_checkpoint(args.affinity_checkpoint, map_location="cpu", mmap=True)
     with args.affinity_checkpoint.open("rb") as handle:
         checksum = hashlib.file_digest(handle, "sha256").hexdigest()
     rows = []

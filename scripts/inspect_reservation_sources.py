@@ -5,6 +5,7 @@ import math
 from pathlib import Path
 
 import torch
+from checkpoint_io import load_checkpoint
 
 
 def main():
@@ -14,7 +15,7 @@ def main():
     args = parser.parse_args()
     torch.set_grad_enabled(False)
     selection = json.loads(args.selection.read_text())["program_metadata"]
-    state = torch.load("boltz2_base.ckpt", map_location="cpu", weights_only=False, mmap=True)["state_dict"]
+    state = load_checkpoint("boltz2_base.ckpt", map_location="cpu", mmap=True)["state_dict"]
     prefix = "structure_module.score_model."
     weight = state[prefix + "s_to_a_linear.1.weight"].double()
     gamma = state[prefix + "s_to_a_linear.0.weight"].double()

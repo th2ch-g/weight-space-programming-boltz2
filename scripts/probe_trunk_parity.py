@@ -9,6 +9,7 @@ from boltz.data.module.inferencev2 import Boltz2InferenceDataModule
 from boltz.data.types import Manifest
 from boltz.main import Boltz2DiffusionParams, MSAModuleArgs, PairformerArgsV2
 from boltz.model.models.boltz2 import Boltz2
+from checkpoint_io import load_model_checkpoint
 from probe_reference_parity import rotations
 
 
@@ -20,7 +21,8 @@ def main():
     if not torch.cuda.is_available():
         raise RuntimeError("Trunk parity probes require a Slurm GPU allocation")
     torch.set_grad_enabled(False)
-    model = Boltz2.load_from_checkpoint(
+    model = load_model_checkpoint(
+        Boltz2,
         "boltz2_base.ckpt",
         map_location="cpu",
         strict=True,

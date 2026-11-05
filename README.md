@@ -21,9 +21,49 @@ metrics. That adjacent workspace is not vendored here; the evaluator accepts its
 location through `--bench`. Modern CIP and full E/Z evaluation are implemented
 locally in `scripts/evaluate.py`.
 
-Prepare the environment with `uv sync --frozen` and run the CPU test suite with
-`uv run --frozen pytest tests`. The Slurm workflows below describe the recorded
-experiments and keep generated artifacts outside version control.
+Prepare the maintained environment and run the CPU test suite with:
+
+```bash
+export UV_PROJECT_ENVIRONMENT=.venv-security
+uv sync --frozen
+uv run --frozen pytest tests
+```
+
+The Slurm wrapper defaults to `.venv-security/bin/python`. The workflows below
+keep generated artifacts outside version control.
+
+## Security-maintained runtime
+
+Boltz remains at version 2.2.1. Its upstream dependency metadata pins several
+older packages, so `pyproject.toml` uses explicit uv overrides for the security
+updates. Use uv with the committed lockfile to apply these overrides.
+
+| Component | Maintained version |
+|---|---|
+| PyTorch | 2.14.1, CUDA 13.0 build |
+| PyTorch Lightning | 2.6.6 |
+| Hydra | 1.3.8 |
+| Requests | 2.34.2 |
+| Biopython | 1.88 |
+| pytest | 9.2.0 |
+
+Checkpoint reads use `weights_only=True` and a fixed allowlist containing only
+the OmegaConf metadata types and builtins required by the published Boltz
+checkpoints. Unrestricted fallback loading is rejected. The loader also rejects
+older PyTorch and Lightning versions that lack the required security behavior.
+
+Validation covered 41 CPU tests, including rejection of a malicious pickle,
+restricted loading of the real baseline and v11 checkpoints, and two GPU smoke
+predictions on one development system. GPU execution requires a driver compatible
+with the CUDA 13 runtime.
+
+The published benchmark scores and checkpoint bytes are unchanged. Those scores
+were produced with the older environment retained in the
+[original evaluation revision](https://github.com/th2ch-g/weight-space-programming-boltz2/tree/5d2e8c8d03e4b164cc5b2b2c079917817335cbb8)
+and the recorded source snapshots. The maintained runtime has not rerun the full
+benchmark, so its numerical outputs must not be substituted into the archived
+results. Use the current environment for new executions; the historical revision
+retains the older dependencies solely as experimental provenance.
 
 ## Completed follow-up evaluations
 
@@ -123,9 +163,9 @@ reference conformer in a local CCD. Both comparison arms use that immutable
 input. The other 208 molecules retain their original naming. Initial parser
 failures remain recorded separately from the successful retries.
 
-Create the dedicated environment with `UV_CACHE_DIR=.cache/uv uv sync --frozen`.
+Create the dedicated environment with `UV_PROJECT_ENVIRONMENT=.venv-security UV_CACHE_DIR=.cache/uv uv sync --frozen`.
 All Python commands use `uv`. The Slurm wrapper defaults to this project's
-`.venv/bin/python`. GPU prediction and substantial data analysis run on compute
+`.venv-security/bin/python`. GPU prediction and substantial data analysis run on compute
 nodes. Supply the cluster's candidate partitions through `GPU_PARTITIONS`.
 
 Set `BENCH_CONFORMER_ROOT` to the existing ct209 campaign directory and
@@ -137,17 +177,17 @@ mkdir -p logs
 sbatch --wait --partition="$CPU_PARTITIONS" --cpus-per-task=4 --mem=24G \
   --output='logs/prepare-%j.log' scripts/slurm.sh scripts/prepare.py \
   --dataset "$BENCH_CONFORMER_ROOT" --checkpoint "$BOLTZ_CACHE/boltz2_conf.ckpt"
-UV_CACHE_DIR=.cache/uv uv run --frozen python scripts/link_cache.py "$BOLTZ_CACHE"
+UV_PROJECT_ENVIRONMENT=.venv-security UV_CACHE_DIR=.cache/uv uv run --frozen python scripts/link_cache.py "$BOLTZ_CACHE"
 sbatch --wait --partition="$CPU_PARTITIONS" --cpus-per-task=4 --mem=8G \
   --output='logs/input-fix-%j.log' scripts/slurm.sh scripts/prepare_overflow.py
 sbatch --wait --partition="$CPU_PARTITIONS" --cpus-per-task=4 --mem=24G \
   --output='logs/edit-%j.log' scripts/slurm.sh scripts/edit_weights.py \
   edits/input_geometry_v1.json --output boltz2_wsp_input_geometry_v1.ckpt
-UV_CACHE_DIR=.cache/uv uv run --frozen python scripts/make_plan.py \
+UV_PROJECT_ENVIRONMENT=.venv-security UV_CACHE_DIR=.cache/uv uv run --frozen python scripts/make_plan.py \
   --split development --pilot \
   --checkpoints boltz2_base.ckpt boltz2_wsp_input_geometry_v1.ckpt \
   --output artifacts/pilot.json --run-root artifacts/pilot
-UV_CACHE_DIR=.cache/uv uv run --frozen python scripts/submit.py artifacts/pilot.json
+UV_PROJECT_ENVIRONMENT=.venv-security UV_CACHE_DIR=.cache/uv uv run --frozen python scripts/submit.py artifacts/pilot.json
 ```
 
 `scripts/submit.py` requests at most four one-node GPU tasks and waits behind any
@@ -366,7 +406,7 @@ The publication helper uses a separate Hugging Face environment so the frozen
 inference environment stays unchanged.
 
 ```bash
-uv run --frozen python scripts/prepare_weight_release.py \
+UV_PROJECT_ENVIRONMENT=.venv-security uv run --frozen python scripts/prepare_weight_release.py \
   --output artifacts/hf_release \
   --github-url "$GITHUB_REPOSITORY_URL" \
   --model-id "$HF_MODEL_ID" \

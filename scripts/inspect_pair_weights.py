@@ -2,11 +2,12 @@ import json
 from pathlib import Path
 
 import torch
+from checkpoint_io import load_checkpoint
 
 
 def main():
     torch.set_grad_enabled(False)
-    state = torch.load("boltz2_base.ckpt", map_location="cpu", weights_only=False, mmap=True)[
+    state = load_checkpoint("boltz2_base.ckpt", map_location="cpu", mmap=True)[
         "state_dict"
     ]
     results = {}

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from checkpoint_io import load_checkpoint
 from torch.nn import functional as F
 
 
@@ -12,7 +13,7 @@ def main():
     parser.add_argument("plan", type=Path)
     args = parser.parse_args()
     torch.set_grad_enabled(False)
-    state = torch.load("boltz2_base.ckpt", map_location="cpu", weights_only=False, mmap=True)[
+    state = load_checkpoint("boltz2_base.ckpt", map_location="cpu", mmap=True)[
         "state_dict"
     ]
     prefix = "structure_module.score_model.single_conditioner."
