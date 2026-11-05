@@ -1,5 +1,7 @@
 # Third-party notices
 
+The original source code in this repository is licensed under MIT; see [LICENSE](LICENSE).
+
 The experiment uses Boltz-2 2.2.1 and produces modified versions of its structure
 checkpoint. The upstream code and weights are distributed under the MIT license.
 The original notice is retained in [Boltz-MIT.txt](third_party/Boltz-MIT.txt) and

@@ -10,6 +10,7 @@ with a model card, all thirty edit specifications, evaluation summaries, and
 SHA-256 checksums. They are experimental checkpoints; none is a validated repair.
 The upstream Boltz-2 license is retained in
 [third-party notices](THIRD_PARTY_NOTICES.md).
+The source code in this repository is released under the [MIT license](LICENSE).
 
 This source repository excludes the blog manuscript, private session transcript,
 checkpoints, prepared inputs, and generated predictions. The public ligand dataset
