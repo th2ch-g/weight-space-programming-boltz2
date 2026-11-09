@@ -1,0 +1,9 @@
+biopython==1.87
+biotite==1.6.0
+gemmi==0.7.5
+numpy==2.4.6
+pandas==3.0.5
+posebusters==0.6.5
+pyyaml==6.0.2
+rdkit==2026.3.4
+rgi-toolkit @ git+https://github.com/cddlab/rgi_toolkit.git@7ef781aeb0a0d891f14636031b8c2fa21627e951
