@@ -10,7 +10,6 @@ from rdkit import Chem
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("plan", type=Path)
-    parser.add_argument("--bench", type=Path, default=Path("../impl_rgi/bench-rgi"))
     args = parser.parse_args()
     manifest = json.loads(Path("data/ct209/manifest.json").read_text())
     records = {r["id"]: r for r in manifest["records"]}
@@ -28,11 +27,8 @@ def main():
         atoms = [a for a in read_pdb(root / run["prediction"]) if a["chain"] == "B"]
         assert len(atoms) == len(data["ref_pos"])
         reference = Chem.MolFromSmiles(row["smiles"])
-        import sys
-
-        sys.path.insert(0, str(args.bench))
-        from common.chiral import is_ez_equal
         from evaluate import chirality
+        from rgi_benchmark import stereo_matches
 
         frames = []
         for label, xyz in [
@@ -41,9 +37,8 @@ def main():
         ]:
             predicted_atoms = [{**a, "xyz": coord} for a, coord in zip(atoms, xyz, strict=True)]
             mol = prediction_molecule(row["smiles"], predicted_atoms)
-            frames.append(
-                {"step": label, **chirality(reference, mol), "ez_all": is_ez_equal(reference, mol)}
-            )
+            ez = stereo_matches(mol, mol.GetConformer().GetPositions())[1]
+            frames.append({"step": label, **chirality(reference, mol), "ez_all": ez})
         rows.append(
             {
                 "id": task["id"],

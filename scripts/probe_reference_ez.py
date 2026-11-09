@@ -1,6 +1,5 @@
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -8,6 +7,7 @@ import torch
 from evaluate import chirality, geometry, prediction_molecule, read_pdb
 from probe_reference_parity import load_encoder, load_features, rotations
 from rdkit import Chem
+from rgi_benchmark import stereo_matches
 
 
 def rotate_fragment(molecule, bond):
@@ -40,8 +40,6 @@ def main():
     parser.add_argument("plan", type=Path)
     args = parser.parse_args()
     torch.set_grad_enabled(False)
-    sys.path.insert(0, str(Path("../impl_rgi/bench-rgi")))
-    from common.chiral import is_ez_equal
 
     model = load_encoder()
     manifest = json.loads(Path("data/ct209/manifest.json").read_text())
@@ -91,7 +89,7 @@ def main():
             distortion = geometry(altered, source)
             assert distortion["bond_rms"] < 1e-6 and distortion["angle_rms"] < 1e-4
             assert chirality(reference, altered) == chirality(reference, molecule)
-            assert not is_ez_equal(molecule, altered)
+            assert not stereo_matches(molecule, changed)[1]
             ordered = torch.from_numpy(changed[feature_order]).float()
             center = ordered.mean(dim=0, keepdim=True)
             relative = ordered - center

@@ -40,3 +40,21 @@ def test_missing_or_duplicated_seed_cannot_enter_paired_effects():
 def test_failed_evaluation_cannot_be_silently_excluded():
     with pytest.raises(ValueError, match="Incomplete"):
         summary([{"status": "failed"}])
+
+
+def test_pooled_release_summary_uses_development_and_v11_seed_one():
+    from prepare_weight_release import paper_pooled_summary
+
+    candidate = "boltz2_wsp_absolute_vectors_only_v11.ckpt"
+    scores = []
+    for sid, study, seed in (("dev", "development", 1), ("val", "v11", 1),
+                             ("val", "v11", 2), ("val", "v2", 1)):
+        for checkpoint, value in ((BASE, 0.0), (candidate, 1.0)):
+            scores.append({"id": sid, "study": study, "seed": seed, "checkpoint": checkpoint,
+                           "status": "complete", **dict.fromkeys(METRICS, value)})
+    pooled = paper_pooled_summary(scores, ["dev", "val"])
+    assert pooled[candidate]["systems"] == 2
+    assert pooled[candidate]["match"] == 2
+    assert pooled[BASE]["emb_brms_mean"] == 0.0
+    with pytest.raises(ValueError, match="exactly once"):
+        paper_pooled_summary(scores, ["dev", "val", "test"])

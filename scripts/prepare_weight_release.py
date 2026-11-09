@@ -9,10 +9,31 @@ import shutil
 from importlib.metadata import distribution
 from pathlib import Path
 
+import numpy as np
+from evaluate_paper import BASE, CANDIDATES, summary
+
+PAPER_EVALUATION = Path("artifacts/paper_evaluation")
+
 
 def digest(path):
     with path.open("rb") as handle:
         return hashlib.file_digest(handle, "sha256").hexdigest()
+
+
+def paper_pooled_summary(scores, ids):
+    """Summarize development and v11 validation/test predictions at seed 1."""
+    pooled = {}
+    for checkpoint in (BASE, CANDIDATES["v11"]):
+        rows = [row for row in scores if row["checkpoint"] == checkpoint and row["seed"] == 1
+                and row["study"] in ("development", "v11")]
+        if sorted(row["id"] for row in rows) != sorted(ids):
+            raise ValueError("The pooled population must contain each system exactly once")
+        pooled[checkpoint] = {
+            **summary(rows),
+            "emb_brms_mean": float(np.mean([row["emb_brms"] for row in rows])),
+            "emb_arms_mean": float(np.mean([row["emb_arms"] for row in rows])),
+        }
+    return pooled
 
 
 def main():
@@ -33,6 +54,15 @@ def main():
     if len(report["comparisons"]) != 30 or report["failed_evaluations"]:
         raise ValueError("The development comparison is incomplete")
     comparisons = {r["checkpoint"]: r for r in report["comparisons"]}
+    paper_report = json.loads((PAPER_EVALUATION / "report.json").read_text())
+    if (paper_report["status"] != "complete"
+            or digest(PAPER_EVALUATION / "scores.json") != paper_report["scores_sha256"]):
+        raise ValueError("The manuscript-evaluator rescoring is incomplete or changed")
+    manifest_ids = [row["id"] for row in json.loads(
+        Path("data/ct209/manifest.json").read_text())["records"]]
+    pooled = paper_pooled_summary(
+        json.loads((PAPER_EVALUATION / "scores.json").read_text()), manifest_ids
+    )
     args.output.mkdir(parents=True)
     (args.output / "edits").mkdir()
     (args.output / "evaluation").mkdir()
@@ -92,6 +122,13 @@ def main():
         "artifacts/all_candidates_development/reproducibility_check.json",
         args.output / "evaluation" / "reproducibility_check.json",
     )
+    shutil.copyfile(PAPER_EVALUATION / "report.md", args.output / "evaluation" / "paper_evaluation.md")
+    (args.output / "evaluation" / "paper_evaluation_v11_209.json").write_text(json.dumps({
+        "population": "55 development systems plus v11 validation and test systems at seed 1",
+        "includes_selection_systems": True,
+        "scores_sha256": paper_report["scores_sha256"],
+        "summaries": pooled,
+    }, indent=2) + "\n")
     lines = [
         "---", "license: mit", "base_model: boltz-community/boltz-2",
         "datasets:", "- wasarou/plinder-cistrans-209",
@@ -103,7 +140,7 @@ def main():
         "## Provenance", "",
         f"The unmodified baseline is the [upstream Boltz-2 structure checkpoint]({upstream}). Its SHA-256 is `{base}`. The baseline is not duplicated here. Each edited file was checked against its original edit record, and all untargeted tensors were verified during checkpoint creation. The files retain the upstream MIT license and copyright notice in LICENSE.", "",
         "## Evaluation scope", "",
-        "All thirty candidates were compared on the same 55 development systems at seed 1, with a shared baseline and matched GPU allocations. No candidate met the simultaneous-improvement criteria. v11 had better development point estimates than v2 for R/S, joint stereochemistry, and the two geometry medians, but its bond-length median was worse than the baseline. These development results do not establish a validated replacement.", "",
+        "All thirty candidates were compared on the same 55 development systems at seed 1, with a shared baseline and matched GPU allocations. No candidate met the simultaneous-improvement criteria. v11 had better development point estimates than v2 for R/S, joint stereochemistry, and the two geometry medians, but its bond-length median was worse than the baseline under the repository evaluator. These development results do not establish a validated replacement.", "",
         "The frozen v2 follow-up evaluated 50 validation systems at seed 1 and 104 test systems at seeds 1, 2, and 3. Joint test agreement was unchanged at 103/312 predictions. All primary pooled-effect confidence intervals included zero. Repeated seeds were averaged within each system before biological-group resampling.", "",
         "The v11 validation/test follow-up is recorded separately. The same test split had already been used for v2, so it is not a new untouched test.", "",
         "- [Full thirty-candidate development comparison](evaluation/all_candidates_development.md)",
@@ -113,6 +150,16 @@ def main():
         lines.append("- [Frozen v11 evaluation](evaluation/frozen_v11_evaluation.md)")
     else:
         lines.append("- The v11 validation/test evaluation is still running; its completed report will be added when available.")
+    base_pool, v11_pool = pooled[BASE], pooled[CANDIDATES["v11"]]
+    lines += ["- [RGI manuscript evaluator rescoring](evaluation/paper_evaluation.md)", "",
+              "## RGI manuscript evaluator", "",
+              "The archived predictions were also rescored with the RGI-Toolkit manuscript evaluator, which reproduced all 627 manuscript Boltz-2 predictions. It uses a different reference conformer from the repository evaluator and reverses the sign of the small v11 development bond-length difference. The table pools the 55 development systems with the v11 validation and test systems at seed 1. This pool includes the systems used for selection. All paired confidence intervals for the non-development and test populations included zero.", "",
+              "| Checkpoint | R/S | E/Z | Joint | Bond median (A) | Angle median (degrees) | Bond mean (A) | Angle mean (degrees) |",
+              "|---|---:|---:|---:|---:|---:|---:|---:|"]
+    for label, row in (("Upstream baseline", base_pool), ("v11", v11_pool)):
+        lines.append(f"| {label} | {row['match']}/{row['systems']} | {row['ez_match']}/{row['systems']} | "
+                     f"{row['joint']}/{row['systems']} | {row['emb_brms']:.6f} | {row['emb_arms']:.4f} | "
+                     f"{row['emb_brms_mean']:.6f} | {row['emb_arms_mean']:.4f} |")
     lines += ["", "## Development results", "",
               "Counts are complete-system agreements out of 55. Geometry values are median RMS errors against independent ETKDGv3/UFF conformers, not experimental binding-pose errors.", "",
               "| Candidate | R/S | Full E/Z | Joint | Bond median (A) | Angle median (degrees) |",

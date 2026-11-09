@@ -8,6 +8,8 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
+import rgi_benchmark
+
 
 def digest(path):
     with Path(path).open("rb") as handle:
@@ -157,10 +159,12 @@ def main():
         path.as_posix(): digest(path) for path in sorted((args.output / "plans").glob("*.json"))
     })
     write_json(args.output / "analysis_manifest.json", {
-        name: digest(name) for name in (
+        **{name: digest(name) for name in (
             "scripts/report_frozen_evaluation.py", "scripts/report_v11_evaluation.py",
-            "tests/test_v11_evaluation.py", "../impl_rgi/bench-rgi/common/chiral.py",
-        )
+            "tests/test_v11_evaluation.py", "scripts/rgi_benchmark.py",
+        )},
+        **{f"rgi_toolkit/benchmark/{name}": value
+           for name, value in rgi_benchmark.source_hashes().items()},
     })
     with tarfile.open(args.output / "source_snapshot.tar.gz", "w:gz") as archive:
         for name in source_names:

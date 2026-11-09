@@ -1,14 +1,11 @@
 import json
 import pickle
-import sys
 from pathlib import Path
 
 import torch
 from checkpoint_io import load_checkpoint
 from rdkit import Chem
-
-sys.path.insert(0, str(Path("../impl_rgi/bench-rgi")))
-from common.chiral import is_ez_equal
+from rgi_benchmark import stereo_matches
 
 names = (
     "ALA ARG ASN ASP CYS GLN GLU GLY HIS ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL UNK".split()
@@ -35,7 +32,9 @@ for row in manifest["records"]:
         with file.open("rb") as handle:
             mol = pickle.load(handle)
         reference = Chem.MolFromSmiles(row["smiles"])
-        assert is_ez_equal(reference, mol)
+        match = mol.GetSubstructMatch(reference)
+        assert len(match) == reference.GetNumAtoms()
+        assert stereo_matches(reference, mol.GetConformer().GetPositions()[list(match)])[1]
         overflow.append({"id": row["id"], "reference_ez_valid": True})
 base = load_checkpoint("boltz2_base.ckpt", map_location="cpu", mmap=True)[
     "state_dict"

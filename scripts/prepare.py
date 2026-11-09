@@ -2,6 +2,7 @@ import argparse
 import csv
 import hashlib
 import json
+import lzma
 import shutil
 from importlib.metadata import version
 from pathlib import Path
@@ -23,6 +24,55 @@ def write_json(path, data):
     path.write_text(json.dumps(data, indent=2) + "\n")
 
 
+DATASET_ID = "wasarou/plinder-cistrans-209"
+DATASET_REVISION = "c99d4646cbf2c8359ea00d6bc647a62be085c5bd"
+INDEX_SHA256 = "50fe82089aaba7c9126624b50338a3fa5eead2a04c762780834651391f57632a"
+
+
+def msa_query(text):
+    sequence = []
+    started = False
+    for line in text.splitlines():
+        if line.startswith("#") or not line.strip():
+            continue
+        if line.startswith(">"):
+            if started:
+                break
+            started = True
+        elif started:
+            sequence.append(line.strip())
+        else:
+            raise ValueError("Invalid A3M")
+    query = "".join(c for c in "".join(sequence) if c.isupper())
+    if not query:
+        raise ValueError("Empty A3M query")
+    return query
+
+
+def public_inputs(dataset):
+    """Yield verified rows, MSAs, crystal SDFs, and Boltz inputs from the public dataset."""
+    if digest(dataset / "index.csv") != INDEX_SHA256:
+        raise ValueError(f"Use {DATASET_ID} at revision {DATASET_REVISION}")
+    rows = list(csv.DictReader((dataset / "index.csv").open()))
+    if len(rows) != 209:
+        raise ValueError("Expected 209 systems")
+    for row in rows:
+        sid = row["sys_id"]
+        msa = lzma.decompress((dataset / "msa" / f"{sid}.a3m.xz").read_bytes())
+        sdf = dataset / "sdf" / f"{sid}.sdf"
+        if hashlib.sha256(msa).hexdigest() != row["a3m_sha256"] or digest(sdf) != row["sdf_sha256"]:
+            raise ValueError(f"Dataset file hash differs: {sid}")
+        doc = {
+            "sequences": [
+                {"protein": {"id": "A", "msa": f"../msa/{sid}.a3m",
+                             "sequence": msa_query(msa.decode())}},
+                {"ligand": {"id": "B", "smiles": row["smiles"]}},
+            ],
+            "version": 1,
+        }
+        yield row, msa, sdf, doc
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=Path, required=True)
@@ -34,32 +84,12 @@ def main():
     (out / "inputs").mkdir(parents=True, exist_ok=True)
     (out / "msa").mkdir(exist_ok=True)
     (out / "sdf").mkdir(exist_ok=True)
-    rows = list(csv.DictReader((args.dataset / "index_subct209.csv").open()))
-    assert len(rows) == 209
     records = []
-    for index, row in enumerate(rows):
+    for row, msa, sdf, doc in public_inputs(args.dataset):
         sid = row["sys_id"]
-        source = args.dataset / f"smict209/b_{index // 10}/inputs/{sid}.yaml"
-        if not source.exists():
-            matches = list((args.dataset / "smict209").glob(f"b_*/inputs/{sid}.yaml"))
-            assert len(matches) == 1, sid
-            source = matches[0]
-        doc = yaml.safe_load(source.read_text())
-        prot = next(item["protein"] for item in doc["sequences"] if "protein" in item)
-        lig = next(item["ligand"] for item in doc["sequences"] if "ligand" in item)
-        assert lig["smiles"] == row["smiles"]
-        assert lig.get("conformer_restraints") is False
-        assert "constraints" not in doc and "templates" not in doc
-        lig.pop("conformer_restraints")
-        msa = (source.parent / prot["msa"]).resolve()
-        sdf = args.dataset / "hf/plinder_cistrans_209/sdf" / f"{sid}.sdf"
-        for src, dest, hash_key in (
-            (msa, out / "msa" / f"{sid}.a3m", "a3m_sha256"),
-            (sdf, out / "sdf" / f"{sid}.sdf", "sdf_sha256"),
-        ):
-            assert digest(src) == row[hash_key], (sid, hash_key)
-            shutil.copyfile(src, dest)
-        prot["msa"] = f"../msa/{sid}.a3m"
+        (out / "msa" / f"{sid}.a3m").write_bytes(msa)
+        shutil.copyfile(sdf, out / "sdf" / f"{sid}.sdf")
+        prot = doc["sequences"][0]["protein"]
         dest = out / "inputs" / f"{sid}.yaml"
         dest.write_text(yaml.safe_dump(doc, sort_keys=False))
         mol = Chem.MolFromSmiles(row["smiles"])
@@ -76,7 +106,6 @@ def main():
                 "input_sha256": digest(dest),
                 "msa_sha256": row["a3m_sha256"],
                 "sdf_sha256": row["sdf_sha256"],
-                "source_input_sha256": digest(source),
                 "ligand_atoms": mol.GetNumHeavyAtoms(),
                 "protein_length": len(prot["sequence"]),
             }
@@ -128,8 +157,9 @@ def main():
         key=lambda r: (r["protein_length"], r["id"]),
     )[:8]
     manifest = {
-        "dataset": "bench-rgi ct209",
-        "index_sha256": digest(args.dataset / "index_subct209.csv"),
+        "dataset": DATASET_ID,
+        "dataset_revision": DATASET_REVISION,
+        "index_sha256": INDEX_SHA256,
         "split_rule": "Connected components: equal achiral Murcko scaffold or global sequence identity >=0.4 of longer sequence with length ratio >=0.8; deterministic group order; 42 development, 32 validation minimum; remainder test.",
         "counts": counts,
         "pilot_ids": [r["id"] for r in pilot],

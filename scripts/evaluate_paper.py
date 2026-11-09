@@ -1,4 +1,4 @@
-"""Rescore archived predictions with the frozen RGI manuscript evaluator."""
+"""Rescore archived predictions with the RGI manuscript metrics of the public benchmark."""
 
 import argparse
 import csv
@@ -7,7 +7,6 @@ import json
 import math
 import os
 import shutil
-import sys
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
 from datetime import UTC, datetime
@@ -15,6 +14,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 import numpy as np
+import rgi_benchmark
 
 BASE = "boltz2_base.ckpt"
 CANDIDATES = {
@@ -22,11 +22,7 @@ CANDIDATES = {
     "v11": "boltz2_wsp_absolute_vectors_only_v11.ckpt",
 }
 METRICS = ("match", "ez_match", "joint", "emb_brms", "emb_arms")
-BENCH_FILES = (
-    "common/__init__.py", "common/chiral.py", "common/clash.py",
-    "common/pb_config.yml", "common/struct.py", "common/sdf.py",
-    "conformer/conf_metrics.py",
-)
+CALIBRATION_TOLERANCE = 1e-5
 MOL_BUILD_SHA256 = "bc7463748663ee1eea21dc8e04d7abef5482466aa9e1952e812fe5658ade60f9"
 
 
@@ -50,28 +46,19 @@ def relative(path):
     return Path(os.path.relpath(path)).as_posix()
 
 
-def verify_evaluator(bench, paper):
+def verify_evaluator(paper):
     import rgi_toolkit._mol_build as mol_build
 
     metadata = read_json(paper / "evaluation.json")
-    expected = {
-        **metadata["source"]["source_sha256"],
-        **metadata["ez_reanalysis"]["source_sha256"],
-    }
-    hashes = {}
-    for name in BENCH_FILES:
-        hashes[name] = digest(bench / name)
-        if hashes[name] != expected[name]:
-            raise ValueError(f"Manuscript evaluator source differs: {name}")
+    hashes = rgi_benchmark.source_hashes()
     if digest(mol_build.__file__) != MOL_BUILD_SHA256:
         raise ValueError("Manuscript reference-preparation source differs")
     versions = {name: version(name) for name in metadata["software"]}
     if versions != metadata["software"]:
         raise ValueError(f"Manuscript software differs: {versions}")
-    if version("rgi-toolkit") != metadata["preparation"]["rgi_toolkit"]:
-        raise ValueError("Manuscript toolkit version differs")
     return {
-        "benchmark_source_sha256": hashes,
+        "benchmark": {"repository": rgi_benchmark.REPOSITORY, "commit": rgi_benchmark.COMMIT,
+                      "source_sha256": hashes},
         "reference_preparation_sha256": MOL_BUILD_SHA256,
         "software": {**versions, "rgi-toolkit": version("rgi-toolkit")},
         "preparation": metadata["preparation"],
@@ -170,21 +157,25 @@ def prepare_tasks(manifest, paper, paper_predictions):
     return rows, list(jobs.values()), source_hashes
 
 
-def initialize_worker(bench, rows):
-    global engine
-    sys.path.insert(0, str(Path(bench) / "conformer"))
-    import conf_metrics
-
-    conf_metrics.ROWS = rows
-    engine = conf_metrics
+def initialize_worker(rows):
+    global ROWS
+    ROWS = rows
+    rgi_benchmark.load()
 
 
 def score_prediction(path, sid):
-    result = engine.analyze("boltz", Path(path), sid)
-    if result is None:
-        raise ValueError("The manuscript evaluator could not read the ligand")
-    result = {key: value.item() if isinstance(value, np.generic) else value
-              for key, value in result.items()}
+    from evaluate import prediction_molecule, read_pdb
+
+    row = ROWS[sid]
+    metrics = rgi_benchmark.conformer_metrics(
+        prediction_molecule(row["smiles"], read_pdb(Path(path))), row["sdf_path"]
+    )
+    result = {
+        "match": metrics["chiral_match"], "ez_match": metrics["ez_match"],
+        "emb_brms": metrics["ideal_bond_rms"], "emb_arms": metrics["ideal_angle_rms"],
+        "bond_rms": metrics["crystal_bond_rms"], "angle_rms": metrics["crystal_angle_rms"],
+        "ligand_rmsd": metrics["ligand_rmsd"],
+    }
     for key in ("match", "ez_match", "emb_brms", "emb_arms"):
         if result[key] is None or not math.isfinite(result[key]):
             raise ValueError(f"Missing or nonfinite manuscript metric: {key}")
@@ -202,9 +193,13 @@ def score_system(job):
             mismatches = {}
             for key in ("match", "ez_match", "emb_brms", "emb_arms", "bond_rms", "angle_rms",
                         "ligand_rmsd"):
-                actual = str(int(result[key])) if key in ("match", "ez_match") else f"{result[key]:.6f}"
-                if actual != task["expected"][key]:
-                    mismatches[key] = {"saved": task["expected"][key], "recomputed": actual}
+                saved = task["expected"][key]
+                if key in ("match", "ez_match"):
+                    differs = str(int(result[key])) != saved
+                else:
+                    differs = abs(result[key] - float(saved)) > CALIBRATION_TOLERANCE
+                if differs:
+                    mismatches[key] = {"saved": saved, "recomputed": result[key]}
             calibration.append({"id": job["id"], "arm": task["arm"], "mismatches": mismatches})
         except Exception as exc:
             failures.append({"id": job["id"], "paper_arm": task["arm"], "error": str(exc)})
@@ -219,12 +214,14 @@ def score_system(job):
             failures.append({"id": job["id"], "prediction": task["prediction"], "error": str(exc)})
     from rdkit import Chem
 
-    smiles = Chem.MolToSmiles(Chem.MolFromSmiles(engine.ROWS[job["id"]]["smiles"]))
-    reference = engine._IDEAL_CACHE.get(smiles)
+    smiles = Chem.MolToSmiles(Chem.MolFromSmiles(ROWS[job["id"]]["smiles"]))
+    try:
+        reference = rgi_benchmark.load().ideal(smiles)[1].tolist()
+    except ValueError:
+        reference = None
     return {"id": job["id"], "calibration": calibration, "scores": scores,
             "failures": failures, "reference": {
-                "canonical_smiles": smiles,
-                "coordinates": reference.tolist() if reference is not None else None,
+                "canonical_smiles": smiles, "coordinates": reference,
             }}
 
 
@@ -316,7 +313,8 @@ def make_report(scores, manifest):
 def render_report(report):
     lines = ["# Re-evaluation with the RGI manuscript method", "",
              "Archived predictions were rescored; no model inference or weight editing was performed.",
-             "R/S uses the manuscript's legacy RDKit center assignment. E/Z includes only acyclic,",
+             "R/S and E/Z compare input-graph CIP labels with labels perceived from predicted",
+             "coordinates, using the public RGI-Toolkit benchmark. E/Z includes only acyclic,",
              "nonaromatic, heavy-atom-decidable defined bonds. Geometry uses the manuscript's",
              "independent canonical-SMILES ETKDGv3/UFF/stereo-validated reference preparation.", "",
              "The joint count is the conjunction of the manuscript's two per-system classifications.",
@@ -348,7 +346,6 @@ def render_report(report):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bench", type=Path, required=True)
     parser.add_argument("--paper-data", type=Path, required=True)
     parser.add_argument("--paper-predictions", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -359,13 +356,13 @@ def main():
     output = args.output
     if (output / "protocol.json").exists():
         raise FileExistsError("Use a new evaluation output directory")
-    evaluator = verify_evaluator(args.bench, args.paper_data)
+    evaluator = verify_evaluator(args.paper_data)
     manifest_path = Path("data/ct209/manifest.json")
     manifest = read_json(manifest_path)
     rows, jobs, source_hashes = prepare_tasks(manifest, args.paper_data, args.paper_predictions)
     protocol = {
         "created_utc": datetime.now(UTC).isoformat(),
-        "purpose": "Rescore saved WSP predictions using the RGI manuscript evaluator.",
+        "purpose": "Rescore saved WSP predictions using the RGI manuscript metrics.",
         "evaluation_only": True, "original_repair_gate_unchanged": True,
         "manifest_sha256": digest(manifest_path), "source_score_sha256": source_hashes,
         "evaluator": evaluator, "driver_sha256": digest(__file__),
@@ -373,19 +370,19 @@ def main():
         "planned_predictions": sum(len(job["wsp"]) for job in jobs),
         "planned_calibration_predictions": sum(len(job["paper"]) for job in jobs),
         "inputs": {key: relative(value) for key, value in {
-            "bench": args.bench, "paper_data": args.paper_data,
+            "paper_data": args.paper_data,
             "paper_predictions": args.paper_predictions,
         }.items()},
     }
     write_json(output / "protocol.json", protocol)
-    for name in BENCH_FILES:
-        destination = output / "source" / "bench-rgi" / name
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(args.bench / name, destination)
-    shutil.copyfile(__file__, output / "source" / "evaluate_paper.py")
+    (output / "source" / "rgi_benchmark").mkdir(parents=True)
+    for name in rgi_benchmark.SOURCE_SHA256:
+        shutil.copyfile(rgi_benchmark.directory() / name, output / "source" / "rgi_benchmark" / name)
+    for path in (Path(__file__), Path(rgi_benchmark.__file__), Path(__file__).with_name("evaluate.py")):
+        shutil.copyfile(path, output / "source" / path.name)
     results = []
     with ProcessPoolExecutor(max_workers=args.workers, initializer=initialize_worker,
-                             initargs=(str(args.bench.resolve()), rows)) as pool:
+                             initargs=(rows,)) as pool:
         for result in pool.map(score_system, jobs):
             results.append(result)
             write_json(output / "systems" / f"{result['id']}.json", result)
@@ -404,7 +401,7 @@ def main():
         raise ValueError("Evaluation or manuscript calibration failed; inspect retained results")
     if any(digest(path) != checksum for path, checksum in source_hashes.items()):
         raise ValueError("Archived source scores changed during evaluation")
-    verify_evaluator(args.bench, args.paper_data)
+    verify_evaluator(args.paper_data)
     report = {"status": "complete", "predictions": len(scores),
               "counts": dict(Counter(row["study"] for row in scores)),
               "manuscript_calibration_predictions": len(calibration),

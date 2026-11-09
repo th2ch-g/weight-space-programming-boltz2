@@ -1,20 +1,17 @@
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 from evaluate import chirality, full_stereochemistry, prediction_molecule, read_pdb
 from rdkit import Chem
+from rgi_benchmark import stereo_matches
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("plan", type=Path)
-    parser.add_argument("--bench", type=Path, default=Path("../impl_rgi/bench-rgi"))
     args = parser.parse_args()
-    sys.path.insert(0, str(args.bench))
-    from common.chiral import is_ez_equal
 
     manifest = json.loads(Path("data/ct209/manifest.json").read_text())
     by_id = {row["id"]: row for row in manifest["records"]}
@@ -50,7 +47,7 @@ def main():
                     "layer": str(label),
                     **chirality(reference, molecule),
                     **full_stereochemistry(reference, molecule),
-                    "ez_all": bool(is_ez_equal(reference, molecule)),
+                    "ez_all": stereo_matches(molecule, molecule.GetConformer().GetPositions())[1],
                 }
             )
         final_mask = data["labels"] == "decoder_2_output"

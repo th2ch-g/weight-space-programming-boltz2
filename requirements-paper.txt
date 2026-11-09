@@ -6,4 +6,4 @@ pandas==3.0.5
 posebusters==0.6.5
 pyyaml==6.0.2
 rdkit==2026.3.4
-rgi-toolkit @ git+https://github.com/cddlab/rgi_toolkit.git@7ef781aeb0a0d891f14636031b8c2fa21627e951
+rgi-toolkit @ git+https://github.com/cddlab/rgi_toolkit.git@900aff9e73553e3113cba5506c62262f0beb9fdb

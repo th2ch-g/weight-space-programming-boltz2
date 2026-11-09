@@ -2,7 +2,9 @@
 name = "wsp-boltz2"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["boltz==2.2.1", "torch==2.14.1", "biopython==1.88", "pyyaml==6.0.2"]
+dependencies = [
+  "boltz==2.2.1", "torch==2.14.1", "biopython==1.88", "pyyaml==6.0.2", "rgi-toolkit==0.5.0",
+]
 
 [dependency-groups]
 dev = ["pytest>=9.2,<10", "ruff>=0.11,<1"]
@@ -17,6 +19,7 @@ override-dependencies = [
 
 [tool.uv.sources]
 torch = {index = "pytorch-cu130"}
+rgi-toolkit = {git = "https://github.com/cddlab/rgi_toolkit.git", rev = "900aff9e73553e3113cba5506c62262f0beb9fdb"}
 
 [[tool.uv.index]]
 name = "pytorch-cu130"

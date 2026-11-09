@@ -2,7 +2,8 @@
 
 This project tests direct edits to Boltz-2 weights using the reasoning-driven
 method described in [Sparks of Weight-Space Programming](https://rikiyat.github.io/blog/weight-space-programming/).
-The experiment uses the ct209 dataset from the adjacent `bench-rgi` workspace.
+The experiment uses the public
+[PLINDER cis/trans 209 (ct209) dataset](https://huggingface.co/datasets/wasarou/plinder-cistrans-209).
 It does not train the model, use inference guidance, or repair output coordinates.
 
 The [edited checkpoints are distributed on Hugging Face](https://huggingface.co/wasarou/weight-space-programming-boltz2),
@@ -13,13 +14,38 @@ The upstream Boltz-2 license is retained in
 The source code in this repository is released under the [MIT license](LICENSE).
 
 This source repository excludes the blog manuscript, private session transcript,
-checkpoints, prepared inputs, and generated predictions. The public ligand dataset
-is [PLINDER cis/trans 209](https://huggingface.co/datasets/wasarou/plinder-cistrans-209).
-Reproducing the archived campaign additionally requires its prepared benchmark
-inputs and a compatible `bench-rgi` checkout for the legacy `common.chiral`
-metrics. That adjacent workspace is not vendored here; the evaluator accepts its
-location through `--bench`. Modern CIP and full E/Z evaluation are implemented
-locally in `scripts/evaluate.py`.
+checkpoints, prepared inputs, and generated predictions. `scripts/prepare.py`
+builds the Boltz inputs from dataset revision
+`c99d4646cbf2c8359ea00d6bc647a62be085c5bd`. The rebuilt MSAs, crystal SDFs,
+sequences, and input YAML files are byte-identical to the archived inputs for
+all 209 systems.
+
+Modern CIP and full E/Z evaluation are implemented locally in
+`scripts/evaluate.py`. The benchmark R/S, benchmark E/Z, and manuscript
+conformer metrics use the public
+[RGI-Toolkit benchmark](https://github.com/cddlab/rgi_toolkit/tree/main/benchmark)
+at tag `v0.5.0` (`900aff9e73553e3113cba5506c62262f0beb9fdb`).
+`scripts/rgi_benchmark.py` loads it from `RGI_BENCHMARK` and checks the source
+hashes. Download the dataset and benchmark with:
+
+```bash
+uvx --from huggingface_hub==1.27.0 hf download wasarou/plinder-cistrans-209 \
+  --repo-type dataset --revision c99d4646cbf2c8359ea00d6bc647a62be085c5bd \
+  --local-dir "$CT209_DATASET"
+git clone --branch v0.5.0 https://github.com/cddlab/rgi_toolkit.git "$RGI_TOOLKIT"
+export RGI_BENCHMARK="$RGI_TOOLKIT/benchmark"
+```
+
+The archived benchmark R/S, benchmark E/Z, and manuscript-evaluator scores were
+produced earlier with a private benchmark checkout. That checkout used the legacy
+RDKit center assignment for benchmark R/S, whereas the public benchmark compares
+CIP labels.
+The ported evaluators have not rescored the archived predictions, so
+`benchmark_chirality_all`, `ez_all`, and the manuscript-evaluator results may
+differ from the archived values. The primary `chirality_all`, `full_ez_all`,
+`full_stereo_all`, and ideal-geometry metrics do not use the benchmark code.
+The dataset label `bench-rgi ct209` in `protocol.json` and the archived manifest
+refers to the same 209 systems.
 
 Prepare the maintained environment and run the CPU test suite with:
 
@@ -28,6 +54,8 @@ export UV_PROJECT_ENVIRONMENT=.venv-security
 uv sync --frozen
 uv run --frozen pytest tests
 ```
+
+The benchmark adapter tests are skipped unless `RGI_BENCHMARK` is set.
 
 The Slurm wrapper defaults to `.venv-security/bin/python`. The workflows below
 keep generated artifacts outside version control.
@@ -52,8 +80,9 @@ the OmegaConf metadata types and builtins required by the published Boltz
 checkpoints. Unrestricted fallback loading is rejected. The loader also rejects
 older PyTorch and Lightning versions that lack the required security behavior.
 
-Validation covered 41 CPU tests, including rejection of a malicious pickle,
-restricted loading of the real baseline and v11 checkpoints, and two GPU smoke
+Validation covered the 41 CPU tests present at that revision, including
+rejection of a malicious pickle, restricted loading of the real baseline and v11
+checkpoints, and two GPU smoke
 predictions on one development system. GPU execution requires a driver compatible
 with the CUDA 13 runtime.
 
@@ -119,15 +148,25 @@ The blog manuscript is maintained separately and excluded from this repository.
 ### Rescoring with the RGI manuscript evaluator
 
 `scripts/evaluate_paper.py` rescores the archived predictions of the three
-studies above with the evaluator of the RGI-Toolkit manuscript. It performs no
-inference or weight editing. It verifies the manuscript evaluator sources and
-software versions, and requires an exact match for all 627 manuscript Boltz-2
-predictions (209 systems under three conditions). This evaluator differs from
-`scripts/evaluate.py`: R/S uses the legacy RDKit center assignment, E/Z covers
-only acyclic defined bonds, and bond and angle errors are measured against an
+studies above with the conformer metrics of the RGI-Toolkit manuscript. It
+performs no inference or weight editing. It verifies the public benchmark
+sources, the manuscript reference-preparation source, and the manuscript
+software versions. It then requires all 627 manuscript Boltz-2 predictions
+(209 systems under three conditions) to reproduce the saved R/S and E/Z
+classifications exactly and the geometry values within 1e-5. This evaluator differs
+from `scripts/evaluate.py`: R/S and E/Z compare input-graph CIP labels with
+labels perceived from the predicted coordinates, E/Z covers only acyclic defined
+bonds, and bond and angle errors are measured against an
 independent ETKDGv3/UFF reference conformer. Its joint count is the conjunction
 of the per-system R/S and E/Z results, not the common-mapping `full_stereo_all`
 gate.
+
+The archived run used the private benchmark checkout with legacy R/S
+assignment. It matched all 627 manuscript predictions to six decimals. The port
+to the public benchmark has not been rerun. A one-system check reproduced the
+saved R/S and E/Z classifications for the three manuscript conditions, with
+geometry differences of about 1e-6 from the public angle implementation. The
+manuscript data required for the calibration are not public.
 
 The two evaluators disagree on the sign of the small v11 bond-length change.
 On the 55 development systems, the v11 and baseline median bond errors are
@@ -142,16 +181,16 @@ systems used for selection, and every paired confidence interval for the
 non-development and test populations includes zero.
 
 The evaluator uses a separate environment pinned to the manuscript software in
-`requirements-paper.txt`. Set `BENCH_RGI`, `PAPER_RGI_DATA`, and
-`PAPER_RGI_PREDICTIONS` to the benchmark checkout, the manuscript conformer
-source data, and the manuscript Boltz-2 predictions.
+`requirements-paper.txt`. Set `RGI_BENCHMARK` as above, and set
+`PAPER_RGI_DATA` and `PAPER_RGI_PREDICTIONS` to the manuscript conformer source
+data and the manuscript Boltz-2 predictions.
 
 ```bash
 uv venv --python 3.12 .venv-paper
-uv pip install --python .venv-paper/bin/python -r requirements-paper.txt
+uv pip install --no-config --python .venv-paper/bin/python -r requirements-paper.txt
 WSP_PYTHON=.venv-paper/bin/python sbatch --wait --partition="$CPU_PARTITIONS" \
   --cpus-per-task=4 --mem=12G --output='logs/paper-evaluation-%j.log' \
-  scripts/slurm.sh scripts/evaluate_paper.py --bench "$BENCH_RGI" \
+  scripts/slurm.sh scripts/evaluate_paper.py \
   --paper-data "$PAPER_RGI_DATA" --paper-predictions "$PAPER_RGI_PREDICTIONS" \
   --output artifacts/paper_evaluation --workers 4
 ```
@@ -210,15 +249,15 @@ All Python commands use `uv`. The Slurm wrapper defaults to this project's
 `.venv-security/bin/python`. GPU prediction and substantial data analysis run on compute
 nodes. Supply the cluster's candidate partitions through `GPU_PARTITIONS`.
 
-Set `BENCH_CONFORMER_ROOT` to the existing ct209 campaign directory and
-`BOLTZ_CACHE` to the original Boltz cache. Set `CPU_PARTITIONS` for CPU jobs.
+Set `CT209_DATASET` to the downloaded public dataset and `BOLTZ_CACHE` to the
+original Boltz cache. Set `CPU_PARTITIONS` for CPU jobs.
 The original cache is only read.
 
 ```bash
 mkdir -p logs
 sbatch --wait --partition="$CPU_PARTITIONS" --cpus-per-task=4 --mem=24G \
   --output='logs/prepare-%j.log' scripts/slurm.sh scripts/prepare.py \
-  --dataset "$BENCH_CONFORMER_ROOT" --checkpoint "$BOLTZ_CACHE/boltz2_conf.ckpt"
+  --dataset "$CT209_DATASET" --checkpoint "$BOLTZ_CACHE/boltz2_conf.ckpt"
 UV_PROJECT_ENVIRONMENT=.venv-security UV_CACHE_DIR=.cache/uv uv run --frozen python scripts/link_cache.py "$BOLTZ_CACHE"
 sbatch --wait --partition="$CPU_PARTITIONS" --cpus-per-task=4 --mem=8G \
   --output='logs/input-fix-%j.log' scripts/slurm.sh scripts/prepare_overflow.py
@@ -260,7 +299,7 @@ Generated data, checkpoints, environments, caches, and logs are ignored. Keep
 the scripts, editing specifications, protocol, and `uv.lock` to reproduce them.
 
 The primary chirality evaluator uses modern CIP assignments and graph
-isomorphisms. The legacy benchmark chirality result is reported separately.
+isomorphisms. The public-benchmark chirality result is reported separately.
 For continued work, `full_ez_all` evaluates all defined E/Z bonds readable from
 heavy-atom coordinates, including ring bonds. The original `ez_all` metric follows
 the RGI benchmark and excludes ring bonds. Both are retained, and bonds whose
@@ -435,15 +474,20 @@ independently verifies the full recorded allocation history.
 After evaluation, submit `scripts/verify_artifacts.py --original-checkpoint
 "$BOLTZ_CACHE/boltz2_conf.ckpt"` through the CPU wrapper. It verifies the original
 and local checkpoint hashes, the recorded comparison audits, and that no test
-systems occur in the saved plans. The result is `artifacts/final_integrity.json`;
-passing this integrity check does not mean that ligand repair succeeded.
+systems occur in the plans saved directly under `artifacts/`. The result is
+`artifacts/final_integrity.json`; passing this integrity check does not mean that
+ligand repair succeeded. This check belongs to the initial campaign, and the saved
+result predates v30 and the follow-up studies. It does not inspect the study
+subdirectories, whose frozen evaluations use the test split by design and keep
+their own audits.
 
 ## Publishing checkpoint artifacts
 
 `scripts/prepare_weight_release.py` checks all thirty checkpoint hashes and
 creates an ignored staging directory using hard links. It includes the edit
 specifications, upstream license, model card, checksums, and completed evaluation
-summaries. Run this file verification in a CPU allocation on a shared cluster.
+summaries. These include the manuscript-evaluator report and its pooled 209-system
+v11 summary. Run this file verification in a CPU allocation on a shared cluster.
 The publication helper uses a separate Hugging Face environment so the frozen
 inference environment stays unchanged.
 

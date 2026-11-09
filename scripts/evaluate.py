@@ -2,13 +2,13 @@ import argparse
 import hashlib
 import itertools
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 from chemistry import atom_names
 from rdkit import Chem, RDLogger
 from rdkit.Chem import AllChem, rdCIPLabeler
+from rgi_benchmark import stereo_matches
 
 RDLogger.DisableLog("rdApp.*")
 
@@ -256,18 +256,16 @@ def paired_displacement(row, base_path, edited_path):
     }
 
 
-def evaluate(row, path, reference_dir, bench):
-    sys.path.insert(0, str(bench))
-    from common.chiral import has_ez_stereo, is_chiral_equal, is_ez_equal
-
+def evaluate(row, path, reference_dir):
     atoms = read_pdb(path)
     mol = prediction_molecule(row["smiles"], atoms)
     reference = Chem.MolFromSmiles(row["smiles"])
+    benchmark_chirality, benchmark_ez = stereo_matches(mol, mol.GetConformer().GetPositions())
     result = {
         **chirality(reference, mol),
         **full_stereochemistry(reference, mol),
-        "benchmark_chirality_all": bool(is_chiral_equal(Chem.Mol(reference), Chem.Mol(mol))),
-        "ez_all": bool(is_ez_equal(reference, mol)) if has_ez_stereo(reference) else None,
+        "benchmark_chirality_all": benchmark_chirality,
+        "ez_all": benchmark_ez,
         **clashes(mol, atoms),
     }
     result["stereo_all"] = result["chirality_all"] and result["ez_all"] is not False
@@ -283,7 +281,6 @@ def evaluate(row, path, reference_dir, bench):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("plan", type=Path)
-    parser.add_argument("--bench", type=Path, default=Path("../impl_rgi/bench-rgi"))
     args = parser.parse_args()
     plan = json.loads(args.plan.read_text())
     if plan.get("stage") == "diagnostic":
@@ -310,7 +307,6 @@ def main():
                             records[task["id"]],
                             runfile.parent / run["prediction"],
                             Path("artifacts/ideal"),
-                            args.bench,
                         )
                     )
                 except (KeyError, ValueError, RuntimeError, OSError) as exc:
