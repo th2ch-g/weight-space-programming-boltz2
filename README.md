@@ -87,7 +87,9 @@ evaluation failures, using at most four simultaneous GPU nodes:
   systems at seed 1. Each system's 31 runs share a GPU allocation, input,
   software, and inference settings. v11 had higher R/S and joint agreement
   than v2, equal E/Z agreement, and lower bond and angle medians. However,
-  v11's bond median was worse than the baseline. No candidate met the
+  v11's bond median was worse than the baseline with `scripts/evaluate.py`;
+  the manuscript evaluator below reverses the sign of this small difference.
+  No candidate met the
   predeclared simultaneous-improvement criteria. This is a development
   comparison and does not establish a validated replacement.
 - [Frozen v11 evaluation](https://huggingface.co/wasarou/weight-space-programming-boltz2/blob/main/evaluation/frozen_v11_evaluation.md):
@@ -113,6 +115,46 @@ Each study retains its frozen protocol, source snapshot, checkpoint hashes,
 per-system scores, paired-condition audits, and scheduler audit. The original
 requirement of zero R/S and E/Z errors across all 209 systems remains unmet.
 The blog manuscript is maintained separately and excluded from this repository.
+
+### Rescoring with the RGI manuscript evaluator
+
+`scripts/evaluate_paper.py` rescores the archived predictions of the three
+studies above with the evaluator of the RGI-Toolkit manuscript. It performs no
+inference or weight editing. It verifies the manuscript evaluator sources and
+software versions, and requires an exact match for all 627 manuscript Boltz-2
+predictions (209 systems under three conditions). This evaluator differs from
+`scripts/evaluate.py`: R/S uses the legacy RDKit center assignment, E/Z covers
+only acyclic defined bonds, and bond and angle errors are measured against an
+independent ETKDGv3/UFF reference conformer. Its joint count is the conjunction
+of the per-system R/S and E/Z results, not the common-mapping `full_stereo_all`
+gate.
+
+The two evaluators disagree on the sign of the small v11 bond-length change.
+On the 55 development systems, the v11 and baseline median bond errors are
+0.038460 and 0.038337 A with `scripts/evaluate.py`, but 0.038121 and 0.038695 A
+with the manuscript evaluator. Pooling the development rows with the v11
+validation and test rows at seed 1 gives 209 systems: R/S agreement changes
+from 89 to 93, E/Z from 163 to 162, joint from 77 to 82, median bond error from
+0.035785 to 0.035492 A, and median angle error from 2.6590 to 2.6327 degrees.
+The corresponding mean bond and angle errors increase from 0.038161 to
+0.038786 A and from 2.8173 to 2.8529 degrees. The pool includes the development
+systems used for selection, and every paired confidence interval for the
+non-development and test populations includes zero.
+
+The evaluator uses a separate environment pinned to the manuscript software in
+`requirements-paper.txt`. Set `BENCH_RGI`, `PAPER_RGI_DATA`, and
+`PAPER_RGI_PREDICTIONS` to the benchmark checkout, the manuscript conformer
+source data, and the manuscript Boltz-2 predictions.
+
+```bash
+uv venv --python 3.12 .venv-paper
+uv pip install --python .venv-paper/bin/python -r requirements-paper.txt
+WSP_PYTHON=.venv-paper/bin/python sbatch --wait --partition="$CPU_PARTITIONS" \
+  --cpus-per-task=4 --mem=12G --output='logs/paper-evaluation-%j.log' \
+  scripts/slurm.sh scripts/evaluate_paper.py --bench "$BENCH_RGI" \
+  --paper-data "$PAPER_RGI_DATA" --paper-predictions "$PAPER_RGI_PREDICTIONS" \
+  --output artifacts/paper_evaluation --workers 4
+```
 
 ## Initial campaign (historical)
 
